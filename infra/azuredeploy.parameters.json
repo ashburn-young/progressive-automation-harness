@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "existingAiServicesName": {
+      "value": "takemyjob"
+    },
+    "existingAppInsightsName": {
+      "value": "airgtakemyjob03b5ad"
+    },
+    "existingKeyVaultName": {
+      "value": "kvrgtakemyjob03b5ad"
+    },
+    "namePrefix": {
+      "value": "pah"
+    },
+    "deployFunctions": {
+      "value": true
+    },
+    "deployAiSearch": {
+      "value": true
+    },
+    "deployRedis": {
+      "value": false
+    },
+    "deployApim": {
+      "value": true
+    },
+    "lockDownPublicAccess": {
+      "value": true
+    }
+  }
+}

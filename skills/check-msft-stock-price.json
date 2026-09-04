@@ -1,0 +1,262 @@
+{
+  "task_name": "Check MSFT Stock Price",
+  "slug": "check-msft-stock-price",
+  "summary": "Retrieve and report the latest available Microsoft Corporation (NASDAQ: MSFT) stock price, including its currency, market status, and quote timestamp.",
+  "required_inputs": [
+    "Ticker symbol: MSFT",
+    "Access to a current market-data source"
+  ],
+  "strategies": {
+    "1": {
+      "step_id": 1,
+      "step_name": "Open browser search",
+      "step_description": "Open a browser and search for 'MSFT stock price'.",
+      "exemplars": [
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Open browser search': Open a browser and search for 'MSFT stock price'.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        }
+      ]
+    },
+    "2": {
+      "step_id": 2,
+      "step_name": "Read current price",
+      "step_description": "Read the current MSFT stock price from the results.",
+      "exemplars": [
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Read current price': Read the current MSFT stock price from the results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        }
+      ]
+    },
+    "3": {
+      "step_id": 3,
+      "step_name": "Report price",
+      "step_description": "Report the MSFT price back to the requester.",
+      "exemplars": [
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        },
+        {
+          "action": "Proposed action for step 'Report price': Report the MSFT price back to the requester.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        }
+      ]
+    },
+    "4": {
+      "step_id": 4,
+      "step_name": "Report the price",
+      "step_description": "Present the price with its timestamp and identify it as real-time, delayed, closing, or after-hours data.",
+      "exemplars": [
+        {
+          "action": "I will report MSFT’s stock price with the exact quote timestamp and clearly label it as real-time, delayed, closing, or after-hours data.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:06:31.225718+00:00"
+        }
+      ]
+    }
+  },
+  "thresholds": {
+    "primed": 1,
+    "deterministic": 3,
+    "autonomous": 5
+  },
+  "version": 1,
+  "created_at": "2026-08-30T16:06:31.225718+00:00",
+  "updated_at": "2026-08-30T16:06:31.225718+00:00"
+}

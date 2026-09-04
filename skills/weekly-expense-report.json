@@ -1,0 +1,68 @@
+{
+  "task_name": "Weekly Expense Report",
+  "slug": "weekly-expense-report",
+  "summary": "Collect receipts, categorize them, and submit a report to finance.",
+  "required_inputs": [
+    "receipt images",
+    "employee id",
+    "cost center"
+  ],
+  "strategies": {
+    "1": {
+      "step_id": 1,
+      "step_name": "Gather receipts",
+      "step_description": "Collect all receipts for the week.",
+      "exemplars": [
+        {
+          "action": "I will collect all paper and digital receipts from the week and place them in one folder for review.",
+          "feedback": "",
+          "timestamp": "2026-08-30T15:57:36.238740+00:00"
+        }
+      ]
+    },
+    "2": {
+      "step_id": 2,
+      "step_name": "Categorize",
+      "step_description": "Assign each receipt a category.",
+      "exemplars": [
+        {
+          "action": "Review each receipt and assign the most appropriate expense category based on the merchant and purchase details.",
+          "feedback": "",
+          "timestamp": "2026-08-30T15:57:36.238740+00:00"
+        }
+      ]
+    },
+    "3": {
+      "step_id": 3,
+      "step_name": "Total & validate",
+      "step_description": "Sum amounts and validate against policy.",
+      "exemplars": [
+        {
+          "action": "I will total all expense amounts, verify the calculations and required documentation, flag duplicates or missing data, and check each expense against applicable policy limits and eligibility rules.",
+          "feedback": "",
+          "timestamp": "2026-08-30T15:57:36.238740+00:00"
+        }
+      ]
+    },
+    "4": {
+      "step_id": 4,
+      "step_name": "Submit",
+      "step_description": "Submit the report to the finance system.",
+      "exemplars": [
+        {
+          "action": "I will submit the completed weekly expense report to the finance system and confirm the submission was successful.",
+          "feedback": "",
+          "timestamp": "2026-08-30T15:57:36.238740+00:00"
+        }
+      ]
+    }
+  },
+  "thresholds": {
+    "primed": 1,
+    "deterministic": 3,
+    "autonomous": 5
+  },
+  "version": 1,
+  "created_at": "2026-08-30T15:57:36.238740+00:00",
+  "updated_at": "2026-08-30T15:57:36.238740+00:00"
+}

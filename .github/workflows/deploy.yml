@@ -1,0 +1,71 @@
+# CI/CD for the Progressive Automation Harness.
+#
+# Runs tests, builds the container image in Azure Container Registry (server-side,
+# no local Docker), and rolls it out to the pah-orchestrator Container App.
+#
+# Auth uses OIDC federation (no stored secrets). One-time setup: add a federated
+# credential to an Entra app registration for this repo, grant it AcrPush on the
+# registry + Contributor on the container app, then set these repo secrets:
+#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+name: build-and-deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "progressive-automation-harness/**"
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write   # for azure/login OIDC
+  contents: read
+
+env:
+  RESOURCE_GROUP: rg-takemyjob
+  ACR_NAME: pahacrqzbtlziciba4a
+  APP_NAME: pah-orchestrator
+  IMAGE_REPO: pah/orchestrator
+  WORKDIR: progressive-automation-harness
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKDIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Run tests
+        run: python -m pytest -q tests/test_harness.py
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKDIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build image in ACR
+        run: |
+          az acr build \
+            --registry "$ACR_NAME" \
+            --image "$IMAGE_REPO:${{ github.sha }}" \
+            --file Dockerfile .
+      - name: Roll out to Container App
+        run: |
+          az containerapp update \
+            --name "$APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$ACR_NAME.azurecr.io/$IMAGE_REPO:${{ github.sha }}"

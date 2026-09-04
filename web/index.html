@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Progressive Automation Harness</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/styles.css?v=20260902-run2" />
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose', flowchart: { curve: 'basis' } });
+    window.__mermaid = mermaid;
+    // Debrief is the default view, so render its diagrams on load.
+    mermaid.run({ querySelector: '.mermaid' }).then(() => { window.__mermaidRendered = true; }).catch(() => {});
+  </script>
+</head>
+<body>
+  <div class="aurora"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo"><img src="logo.webp" alt="AI took my job robot" /></div>
+      <div>
+        <h1>Progressive Automation Harness</h1>
+        <p class="tagline">Interview → Generate → Co-Pilot → <span class="grad">learn a skill that runs itself</span></p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn ghost new-session" id="newSessionBtn" title="Clear everything and start a fresh session">↺ New Session</button>
+      <div class="status" id="modeStatus">
+        <span class="dot" id="modeDot"></span>
+        <span id="modeText">connecting…</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="viewnav">
+    <button class="view-tab active" data-view="debrief" title="How it works and the Azure architecture behind it">📖 Debrief</button>
+    <button class="view-tab" data-view="studio" title="The interactive workspace: define, run, and harden a skill">◐ Studio</button>
+    <button class="view-tab" data-view="library" title="Browse every learned skill, and the shell tools and scripts">🗂 Library</button>
+  </nav>
+
+  <div id="studioView" hidden>
+  <section class="definitions">
+    <div class="def">
+      <span class="def-k">Harness</span>
+      <span class="def-v">the scaffolding that interviews you, runs an agent with human oversight, and harvests every approval as training signal.</span>
+    </div>
+    <div class="def">
+      <span class="def-k">Skill</span>
+      <span class="def-v">the learned, versioned artifact that captures how you do each step, and progressively automates it until you're not needed.</span>
+    </div>
+    <div class="def">
+      <span class="def-k">You are here</span>
+      <span class="def-v">teaching the machine, by example and approval, to turn a manual task into a skill that runs itself.</span>
+    </div>
+  </section>
+
+  <main class="layout">
+    <!-- LEFT: setup -->
+    <section class="panel setup">
+      <h2 class="panel-title">1 · Define the workflow</h2>
+      <p class="panel-desc">Describe a repetitive task in plain language, then click Start. The assistant breaks it into steps and walks you through them.</p>
+
+      <div class="mode-tabs" id="modeTabs" hidden>
+        <button class="mode-tab active" data-mode="describe" title="Type a one-line description of your task">✎ Quick describe</button>
+        <button class="mode-tab" data-mode="interview" title="Let the assistant interview you to build the workflow">💬 Interview</button>
+      </div>
+
+      <div id="describeMode">
+        <div class="chips" hidden>
+          <span class="chips-label">e.g.</span>
+          <button class="chip" data-demo="stock" title="Load a sample task: check the MSFT stock price">📈 MSFT price</button>
+          <button class="chip" data-demo="expense" title="Load a sample task: weekly expense report from receipts">🧾 Expense report</button>
+          <button class="chip" data-demo="fabric" title="Load a sample task: build a Microsoft Fabric data pipeline">🧱 Fabric pipeline</button>
+        </div>
+
+        <label class="field-label" for="desc">Describe a repetitive task</label>
+        <textarea id="desc" rows="3" title="Describe the manual task you want to automate" placeholder="e.g. Open a browser and check the MSFT stock price, then report it back"></textarea>
+      </div>
+
+      <div id="interviewMode" hidden>
+        <div class="chat" id="chatLog"></div>
+        <div class="chat-row">
+          <input id="chatText" class="chat-text" placeholder="Answer the question, or describe your task..." />
+          <button class="btn ghost" id="chatSend">Send</button>
+        </div>
+        <p class="hint">The assistant asks about your steps, systems, and goals, then compiles a deterministic plan.</p>
+      </div>
+
+      <div class="granularity" hidden>
+        <span class="field-label">Detail level <span class="subtle">how finely to break it down</span></span>
+        <div class="seg" id="detailSeg">
+          <button class="seg-btn" data-detail="concise" title="Fewer, higher-level steps (~3-4)">Concise</button>
+          <button class="seg-btn active" data-detail="balanced" title="A clear, moderate breakdown (~5-7 steps)">Balanced</button>
+          <button class="seg-btn" data-detail="detailed" title="Fine-grained, granular steps (~8-12)">Detailed</button>
+        </div>
+      </div>
+
+      <div class="granularity" hidden>
+        <span class="field-label">Model <span class="subtle">which model drafts the steps</span></span>
+        <select id="modelSelect" class="select"
+          title="Pick a specific model, or Auto to tier by detail level (fast model for Concise, stronger for Detailed)">
+          <option value="auto">Auto (tiered by detail)</option>
+        </select>
+      </div>
+
+      <label class="nyes-toggle" title="Require two different people to approve each high-risk step (needs a second signed-in user)" hidden>
+        <input type="checkbox" id="nyesToggle" />
+        <span>Require 2 approvers on high-risk steps <span class="subtle">(segregation of duties)</span></span>
+      </label>
+
+      <div class="btn-row">
+        <button class="btn ghost" id="generateBtn" title="Preview the LLM-grounded plan without running it" hidden>✦ Generate steps</button>
+        <button class="btn primary" id="startBtn" title="Turn your description into steps and walk through them with your approval">▶ Start</button>
+      </div>
+
+      <div class="preview" id="preview" hidden>
+        <div class="preview-head">
+          <span id="previewTask">plan</span>
+          <span class="pill" id="previewBy">demo</span>
+        </div>
+        <ol id="previewSteps" class="preview-steps"></ol>
+      </div>
+
+      <div class="divider" hidden><span>or</span></div>
+
+      <h2 class="panel-title" hidden>Fast-forward the learning</h2>
+      <p class="hint" hidden>Auto-approve several runs and watch the skill graduate to autonomy.</p>
+      <div class="sim-controls" hidden>
+        <select id="simTask" class="select">
+          <option value="stock">MSFT stock price</option>
+          <option value="expense">Expense report</option>
+          <option value="fabric">Fabric pipeline</option>
+        </select>
+        <div class="sim-row">
+          <input id="simRuns" class="num" type="number" min="1" max="20" value="6" />
+          <button class="btn ghost" id="simBtn">⏩ Simulate</button>
+        </div>
+      </div>
+
+      <div class="mcp-box" hidden>
+        <div class="mcp-head">
+          <span>Connected tools <span class="subtle">MCP</span></span>
+          <span class="mcp-status" id="mcpStatus">·</span>
+        </div>
+        <div id="mcpTools" class="mcp-tools">
+          <p class="muted small">Discovering…</p>
+        </div>
+        <button class="btn ghost tiny" id="fabricTestBtn"
+          title="Have the deployed harness identity create a pipeline on real Fabric">🧪 Fabric self-test</button>
+        <div id="fabricTestResult" class="muted small" hidden></div>
+      </div>
+    </section>
+
+    <!-- CENTER: co-pilot stage -->
+    <section class="panel stage">
+      <h2 class="panel-title">2 · Co-Pilot <span class="subtle">human-in-the-loop</span></h2>
+      <p class="panel-desc">Generation + execution. The agent drafts each action and pauses for your Approve, Reject, Modify, or Edit. Every decision teaches the skill.</p>
+
+      <div id="emptyStage" class="empty">
+        <div class="empty-icon">🛰️</div>
+        <p>Start a co-pilot session to step through the agent's actions.</p>
+        <p class="muted">You approve, reject, or modify each drafted action. As approvals repeat, the skill takes over.</p>
+      </div>
+
+      <div id="timeline" class="timeline" hidden></div>
+
+      <!-- HITL breakpoint -->
+      <div id="breakpoint" class="breakpoint" hidden>
+        <div class="bp-flag">⏸ HUMAN-IN-THE-LOOP BREAKPOINT</div>
+        <div class="bp-step" id="bpStep">Step</div>
+        <div class="bp-action" id="bpAction"></div>
+        <div class="bp-source" id="bpSource"></div>
+        <div class="bp-approval" id="bpApproval" hidden></div>
+        <textarea id="feedback" class="feedback" rows="2" placeholder="Feedback (used when you reject or modify)…"></textarea>
+        <textarea id="editAction" class="feedback" rows="2" placeholder="Edit the action, then Edit &amp; run…"></textarea>
+        <div class="bp-actions">
+          <button class="btn approve" data-decision="approve" title="Accept this action and run it">✓ Approve</button>
+          <button class="btn modify" data-decision="modify" title="Send feedback and have the agent redraft">✎ Modify</button>
+          <button class="btn reject" data-decision="reject" title="Reject this action; the step stays human-gated">✗ Reject</button>
+          <button class="btn edit" id="editRunBtn" title="Run your edited action as-is; it becomes the learned example">✐ Edit &amp; run</button>
+        </div>
+      </div>
+
+      <div id="doneBanner" class="done-banner" hidden>
+        <span>🎉</span>
+        <div>
+          <strong>Workflow complete.</strong>
+          <p>Approved actions were logged and compiled into the skill.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: skill maturity -->
+    <section class="panel skill">
+      <h2 class="panel-title">3 · The Skill <span class="subtle">the product</span></h2>
+      <p class="panel-desc">Hardening. Approved actions compile into a portable Skill that climbs from LLM-drafted to fully autonomous. Then save or deploy it.</p>
+
+      <div class="overall">
+        <span>Overall maturity</span>
+        <span class="mat-badge" id="overallBadge" data-level="cold">cold</span>
+      </div>
+
+      <div class="ladder">
+        <div class="rung" data-level="cold"><b>COLD</b><span>LLM drafts · you review</span></div>
+        <div class="rung" data-level="primed"><b>PRIMED</b><span>primed by your examples</span></div>
+        <div class="rung" data-level="deterministic"><b>DETERMINISTIC</b><span>replays · you confirm</span></div>
+        <div class="rung" data-level="autonomous"><b>AUTONOMOUS</b><span>runs itself</span></div>
+      </div>
+
+      <div id="skillRows" class="skill-rows">
+        <p class="muted small">No skill learned yet for this task.</p>
+      </div>
+
+      <div class="skill-actions">
+        <button class="btn ghost tiny" id="viewJsonBtn" title="View the raw skill JSON artifact">{ } JSON</button>
+        <button class="btn ghost tiny" id="promptBtn" title="View a model-agnostic prompt you can paste into any LLM">▨ Prompt</button>
+        <button class="btn ghost tiny" id="exportBtn" title="Download the skill as a portable .json file">⬇ Export</button>
+        <button class="btn primary tiny" id="deployBtn" title="Publish this skill so it can be run headlessly">🚀 Deploy</button>
+      </div>
+      <button class="btn ghost tiny" id="runBtn" title="Run the deployed skill without supervision (stops at high-risk steps)">▶ Run deployed skill</button>
+      <input id="runInputs" class="inputs-field" type="text"
+        title="Optional JSON inputs for this run, e.g. a different ticker"
+        placeholder='Inputs (JSON), e.g. {"symbol":"AAPL"}' />
+    </section>
+  </main>
+  </div>
+
+  <section id="libraryView" class="library" hidden>
+    <div class="lib-head">
+      <h2>Skills library</h2>
+      <p class="muted">Every skill the harness has compiled from approved runs. Open one to inspect, run, or export it. A skill is reusable memory: the more it is approved, the more it runs itself.</p>
+    </div>
+    <div id="libGrid" class="lib-grid">
+      <p class="muted small">Loading skills…</p>
+    </div>
+
+    <div class="lib-head" style="margin-top:28px" hidden>
+      <h2>Shell &amp; scripts <span class="subtle">tool</span></h2>
+      <p class="muted">A governed execution tool with two modes: <b>ad-hoc commands</b> you write fresh each time (checking files, git, installing packages, quick tests/builds), and <b>prewritten scripts</b> invoked by name with flags. Disabled by default; enable with <code>SHELL_TOOL_ENABLED=1</code>.</p>
+    </div>
+    <div class="shell-box" hidden>
+      <div class="shell-status" id="shellStatus">Checking shell tool…</div>
+
+      <div class="shell-adhoc">
+        <label class="field-label" for="shellCmd">Ad-hoc command <span class="subtle">allow-listed, single process, no pipes</span></label>
+        <div class="shell-row">
+          <input id="shellCmd" class="shell-input" type="text" placeholder="e.g. git status  ·  pytest -q  ·  pip install requests" />
+          <button class="btn ghost tiny" id="shellRunBtn" title="Run this one-off command">▷ Run</button>
+        </div>
+      </div>
+
+      <div class="shell-scripts">
+        <span class="field-label">Prewritten scripts <span class="subtle">invoke by name with flags</span></span>
+        <div id="scriptList" class="script-list"><p class="muted small">No scripts found.</p></div>
+      </div>
+
+      <pre id="shellOut" class="shell-out" hidden></pre>
+    </div>
+  </section>
+
+  <section id="debriefView" class="debrief">
+    <div class="db-hero">
+      <h2>What this solution is</h2>
+      <p>
+        The <b>Progressive Automation Harness</b> takes a manual workflow you
+        describe in plain language, grounds it into an ordered plan with an LLM,
+        runs it with you approving each step, and compiles a reusable
+        <b>Skill</b> that progressively takes over the steps you keep approving,
+        until it can run them without you. It runs offline for demos, live against
+        Azure AI Foundry, and is deployed to Azure Container Apps with Cosmos DB.
+      </p>
+    </div>
+
+    <div class="db-grid two">
+      <div class="db-card">
+        <h3>Harness</h3>
+        <p>The scaffolding that interviews you, runs an agent under human
+        oversight, and harvests every approval as training signal. Like a test or
+        climbing harness, it exists to hold a task safely until it can stand on its
+        own. It is the part you eventually remove.</p>
+      </div>
+      <div class="db-card">
+        <h3>Skill</h3>
+        <p>The learned, versioned artifact the harness produces
+        (<code>skills/&lt;task&gt;.json</code>). Per step it stores the
+        human-approved actions and an earned maturity level. It is both the
+        dataset (labelled good actions) and the compiled program (it can draft the
+        next action once mature). It is the part that remains.</p>
+      </div>
+    </div>
+
+    <div class="db-section">
+      <h3>The learning loop</h3>
+      <p class="db-note">Your approvals are training data, so supervising the agent is the act that makes your supervision unnecessary.</p>
+      <pre class="mermaid">
+flowchart LR
+  A["Describe a task"] --> B["LLM grounds it into<br/>an ordered plan"]
+  B --> C["Draft next action<br/>skill first, else LLM"]
+  C --> D{"Human:<br/>approve / reject / modify"}
+  D -->|"reject / modify + feedback"| C
+  D -->|"approve"| E["Execute via a real tool"]
+  E --> F["Log approval,<br/>compile the Skill"]
+  F -.->|"once a step is mastered"| C
+      </pre>
+    </div>
+
+    <div class="db-section">
+      <h3>Solution and Azure architecture</h3>
+      <pre class="mermaid">
+flowchart TB
+  U["User describes a task"]
+  subgraph H["Progressive Automation Harness (the orchestrator)"]
+    direction TB
+    IV["Interviewer<br/>Extraction"]
+    GB["Graph Builder<br/>LangGraph StateGraph"]
+    EX["Executor<br/>Human-in-the-loop"]
+    SKC["Skill Compiler<br/>Hardening"]
+    SKA["Skill artifact<br/>COLD to AUTONOMOUS"]
+    TL["Tool Layer<br/>execute_step router"]
+  end
+  subgraph T["Tools / skills execution"]
+    MCP["MCP servers"]
+    PW["Playwright browser"]
+    API["APIs and built-ins"]
+  end
+  subgraph AZ["Azure · rg-takemyjob · swedencentral"]
+    BRAIN["AI Foundry<br/>gpt-5.6-sol (Brain)"]
+    ACA["Container Apps<br/>pah-orchestrator"]
+    ACR["Container Registry"]
+    COS["Cosmos DB<br/>sessions, skills, trainingLogs"]
+    SR["AI Search"]
+    FN["Functions + Storage"]
+    KV["Key Vault"]
+    AI["App Insights + Log Analytics"]
+    NET["VNet + Private Endpoints"]
+  end
+  U --> IV --> GB --> EX
+  EX -->|"approve"| TL
+  EX -->|"reject / modify"| GB
+  EX --> SKC --> SKA
+  SKA -.->|"drafts mastered steps"| GB
+  IV -.->|"LLM"| BRAIN
+  GB -.->|"LLM (cold steps)"| BRAIN
+  TL --> MCP
+  TL --> PW
+  TL --> API
+  H -.->|"runs as container"| ACA
+  ACA -.->|"pulls image"| ACR
+  ACA -->|"managed identity, RBAC"| BRAIN
+  SKC -->|"persist skill + traces"| COS
+  SKA -.->|"RAG / long-term"| SR
+  ACA --> AI
+  ACA -.->|"secrets"| KV
+  BRAIN --- NET
+  COS --- NET
+  SR --- NET
+      </pre>
+    </div>
+
+    <div class="db-section">
+      <h3>Components and what they do here</h3>
+      <table class="db-table">
+        <tr><th>Component</th><th>Role in this context</th></tr>
+        <tr><td>Interviewer</td><td>Extraction. Turns your sentence (or an interview) into a structured, ordered workflow.</td></tr>
+        <tr><td>Graph Builder</td><td>Generation. Builds the LangGraph state machine; the draft node consults the skill first, LLM only when needed.</td></tr>
+        <tr><td>Executor</td><td>Co-Pilot. Pauses before every step for approve / reject / modify; auto-approves steps the skill has mastered.</td></tr>
+        <tr><td>Skill Compiler</td><td>Hardening. Compiles approved actions into the skill and raises per-step maturity.</td></tr>
+        <tr><td>Skill artifact</td><td>The portable output: per-step exemplars + maturity COLD, PRIMED, DETERMINISTIC, AUTONOMOUS.</td></tr>
+        <tr><td>Tool Layer</td><td>Routes each step to an MCP tool, a Playwright browser session, or a built-in (e.g. a live stock quote).</td></tr>
+        <tr><td>LLM provider</td><td>Azure AI Foundry (gpt-5.6-sol) via managed identity and Azure AD, no API keys.</td></tr>
+        <tr><td>Store</td><td>Persists skills and traces to local files, or to Cosmos DB when deployed.</td></tr>
+        <tr><td>Server + Web</td><td>The FastAPI backend and this single-page app.</td></tr>
+      </table>
+    </div>
+
+    <div class="db-section">
+      <h3>The Azure environment (grounded)</h3>
+      <div class="db-grid two">
+        <div class="db-card">
+          <h4>Reused (already existed)</h4>
+          <ul>
+            <li>AI Services <code>takemyjob</code> + project <code>proj-default</code> + model <code>gpt-5.6-sol</code> (the Brain)</li>
+            <li>Application Insights <code>airgtakemyjob03b5ad</code> (observability)</li>
+            <li>Key Vault <code>kvrgtakemyjob03b5ad</code> (secrets)</li>
+          </ul>
+        </div>
+        <div class="db-card">
+          <h4>Provisioned by the IaC</h4>
+          <ul>
+            <li>Container Apps <code>pah-orchestrator</code> (VNet-integrated)</li>
+            <li>Cosmos DB serverless: <code>sessions</code>, <code>skills</code>, <code>trainingLogs</code></li>
+            <li>AI Search (Basic), Functions + Storage</li>
+            <li>Container Registry <code>pahacrqzbtlziciba4a</code></li>
+            <li>VNet + private endpoints (AI Services, Cosmos, Search)</li>
+            <li>Managed identity + least-privilege RBAC (no keys)</li>
+          </ul>
+        </div>
+      </div>
+      <p class="db-note">Verified live: <code>/api/health</code> returns ok; a cloud session generated a plan with gpt-5.6-sol, ran a real Yahoo Finance quote through an MCP tool, and persisted the skill to Cosmos DB.</p>
+    </div>
+
+    <div class="db-section">
+      <h3>Azure as your AI harness: the ingredients</h3>
+      <p class="db-note">The same Azure services you already govern become the harness. Here is the full recipe and what each ingredient does for you. Skills are what you bake on top and keep.</p>
+      <table class="db-table">
+        <tr><th>Azure ingredient</th><th>Harness layer</th><th>What it does for you</th><th>In this prototype</th></tr>
+        <tr><td>Azure AI Foundry (models, e.g. gpt-5.6-sol)</td><td>Reasoning · the Brain</td><td>Grounds a described task into an ordered plan and drafts each action.</td><td>Deployed</td></tr>
+        <tr><td>Azure Container Apps</td><td>Orchestration host</td><td>Runs the harness that manages the reason, act, observe loop; scales to zero.</td><td>Deployed</td></tr>
+        <tr><td>Azure Functions + Storage</td><td>Tools / skill execution</td><td>Run individual skills as isolated, serverless code.</td><td>Deployed</td></tr>
+        <tr><td>Model Context Protocol (MCP) servers</td><td>Tool discovery + binding</td><td>Let the agent discover and call your enterprise systems as tools, no hardcoding.</td><td>Demo server; bring your own</td></tr>
+        <tr><td>Azure Cosmos DB</td><td>Short-term + skill memory</td><td>Stores sessions, learned skills, and every approval as an auditable trace.</td><td>Deployed</td></tr>
+        <tr><td>Azure AI Search</td><td>Long-term / knowledge memory</td><td>Vector and hybrid search to ground answers in your own knowledge (RAG).</td><td>Deployed</td></tr>
+        <tr><td>Managed Identity + Azure RBAC</td><td>Identity &amp; access</td><td>The harness authenticates with no keys and least-privilege permissions.</td><td>Deployed</td></tr>
+        <tr><td>Azure Key Vault</td><td>Secrets</td><td>Safely holds any third-party credentials a skill needs.</td><td>Reused</td></tr>
+        <tr><td>Azure AI Content Safety</td><td>Guardrails</td><td>Screens every drafted action before execution; severity at/above threshold is blocked and handed back to a human.</td><td>Enforced at execution</td></tr>
+        <tr><td>Azure API Management</td><td>Governance gateway</td><td>Per-team subscription key, rate limit + weekly quota, LLM token-per-minute limit, and a managed-identity-authenticated proxy to the model.</td><td>Enabled</td></tr>
+        <tr><td>VNet + Private Endpoints + Private DNS</td><td>Network isolation</td><td>Keeps model, memory, and data traffic off the public internet.</td><td>Deployed (data layer private)</td></tr>
+        <tr><td>Application Insights + Azure Monitor</td><td>Observability</td><td>OpenTelemetry traces every request and per-step draft/execute span with provenance and outcome.</td><td>Emitting traces</td></tr>
+        <tr><td>Microsoft Entra ID (Easy Auth)</td><td>Identity &amp; sign-in</td><td>Fronts the app so only signed-in users reach it; unauthenticated requests are redirected to Microsoft sign-in.</td><td>Enforced</td></tr>
+        <tr><td>Azure Container Registry</td><td>Supply chain</td><td>Builds and stores the harness image (built in the cloud, no local Docker).</td><td>Deployed</td></tr>
+      </table>
+      <p class="db-note">The recipe: the Brain reasons, the Orchestrator runs the loop, Tools act, Memory remembers, Guardrails and Identity keep it safe, and Observability proves what happened. Every one of these is a managed Azure service you already know how to run.</p>
+    </div>
+
+    <div class="db-section">
+      <h3>Skills are portable across models</h3>
+      <p class="db-note">A skill is plain, model-agnostic JSON with no OpenAI or Azure coupling: the workflow, its inputs, and the human-approved action per step. Any LLM can run it, two ways:</p>
+      <div class="db-grid two">
+        <div class="db-card"><b>Replay.</b> For a mastered step the skill returns the approved action with no LLM call at all. Fully model-independent and deterministic.</div>
+        <div class="db-card"><b>Prime.</b> The approved examples are handed to any LLM (Claude, GPT, Gemini, local) as few-shot context. Only the model provider swaps; the skill does not.</div>
+      </div>
+      <p class="db-note">The <b>Prompt</b> button on a skill exports a ready-to-paste prompt you can drop straight into Claude or any model. Only the harness's LLM provider is Azure-specific; the skill artifact you keep is not.</p>
+    </div>
+
+    <div class="db-section">
+      <h3>Skills-based vs. agentic architecture</h3>
+      <p class="db-note">This <b>is</b> an agentic system — it runs a reason → act → observe loop — but its <b>product</b> is a skill, not an agent. It treats the agent as a factory that distills itself into durable, deterministic skills. The question is where the intelligence ends up living: invoked fresh from the model every run, or extracted into a reusable, governed asset.</p>
+      <table class="db-table">
+        <tr><th>Dimension</th><th>Classic "agentic" solution</th><th>This skills-based harness</th></tr>
+        <tr><td>Where intelligence lives</td><td>In the model + prompt, invoked fresh every run</td><td>Extracted into a compiled artifact; the LLM is only called for cold / novel steps</td></tr>
+        <tr><td>Determinism</td><td>Non-deterministic; same input can take different paths</td><td>Mastered steps replay byte-for-byte, auditable</td></tr>
+        <tr><td>How it improves</td><td>Change the prompt / model / fine-tune</td><td>Human approvals provably graduate steps up a maturity ladder</td></tr>
+        <tr><td>Human role</td><td>Trust assumed up front; review after, or guardrails only</td><td>Human in the loop by default; supervision decreases as trust is earned, per step</td></tr>
+        <tr><td>Cost / latency</td><td>~Constant LLM cost forever</td><td>Decays toward zero as skills mature</td></tr>
+        <tr><td>Portability</td><td>Bound to its framework / model / runtime</td><td>A model-agnostic artifact any LLM can replay or prime on</td></tr>
+        <tr><td>Drift</td><td>Silent when the model updates</td><td>Drift monitoring + demote-on-failure pulls a step back under supervision</td></tr>
+      </table>
+      <p class="db-note">The mental model: a pure agent is a brilliant contractor you re-hire and re-brief for every job. A skills-based harness supervises that contractor a few times, writes down the vetted procedure, and after enough consistent runs the procedure runs itself — the LLM is only called back for genuinely new situations. Agentic is "intelligence as a service, per call"; the skill approach is "intelligence amortized into a reusable asset."</p>
+    </div>
+
+    <div class="db-section">
+      <h3>Cost model</h3>
+      <p class="db-note">Approximate list prices (swedencentral) to size the decision; the shape matters more than the exact dollars — a fixed platform floor plus usage that decays as skills mature.</p>
+      <div class="db-grid two">
+        <div class="db-card">
+          <h4>Baseline floor (~$165–180/mo)</h4>
+          <ul>
+            <li>Azure AI Search Basic ~$75 (RAG) and API Management Developer ~$48 dominate the floor.</li>
+            <li>Private endpoints + DNS ~$25, ACR Basic ~$5, Log Analytics ~$5–15, misc ~$5.</li>
+            <li>Container Apps, Functions, and Cosmos scale to zero (~$0 idle); identity, VNet, and Easy Auth are free.</li>
+            <li>Strip to ~$50–70/mo with APIM off and AI Search Free.</li>
+          </ul>
+        </div>
+        <div class="db-card">
+          <h4>Usage &amp; the decay dynamic</h4>
+          <ul>
+            <li>The main variable is model tokens on immature steps; mastered steps replay with no LLM call.</li>
+            <li>Content Safety per action (~$0.75/1,000), embeddings ~free, Cosmos RUs pennies, Log Analytics per GB.</li>
+            <li>Fabric capacity (F-SKU) only if you run real pipelines; extra model deployments add ~$0 idle (pay-per-token).</li>
+            <li>Per-run cost is highest during learning and trends toward near-zero as steps graduate — unlike an agent that pays full token cost every run forever.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="db-section">
+      <h3>Why an enterprise would use this</h3>
+      <div class="db-grid three">
+        <div class="db-card"><b>Starts where the work is.</b> An employee describes a task they already do; it automates incrementally as trust is earned. Adoption is bottom-up and low-risk.</div>
+        <div class="db-card"><b>Humans in control by default.</b> Nothing runs unattended until approved consistently, and any step can be pinned to always require a human.</div>
+        <div class="db-card"><b>Captures tacit knowledge.</b> The skill artifact is a portable, auditable record of how a task is done, independent of the individual.</div>
+        <div class="db-card"><b>Governed infrastructure.</b> Managed identity, RBAC, private networking, Key Vault, and App Insights, the same controls enterprises already mandate.</div>
+        <div class="db-card"><b>Orchestrator-agnostic.</b> The same Reason, Act, Observe loop works with LangGraph or Semantic Kernel; the harness and skill are the durable parts.</div>
+        <div class="db-card"><b>Automates the long tail.</b> Most value is locked in thousands of small, undocumented workflows too minor for a classic automation project.</div>
+      </div>
+    </div>
+
+    <div class="db-section">
+      <h3>What we are proving</h3>
+      <ul class="db-list">
+        <li>A one-sentence task can be grounded by an LLM into an ordered, executable plan.</li>
+        <li>That plan can be executed with a human approving, rejecting, or modifying each action.</li>
+        <li>Repeated human approvals provably move a step up a maturity ladder until it auto-approves.</li>
+        <li>The same code runs offline, live, and deployed, changing only configuration.</li>
+        <li>Steps bind to real capabilities (MCP tools, live web, external APIs), not just chat.</li>
+        <li>Learned skills are portable, model-agnostic JSON: any LLM (Claude, GPT, local) can run them, and they export as a ready-to-paste prompt.</li>
+      </ul>
+    </div>
+
+    <div class="db-section">
+      <h3>Enterprise capabilities delivered</h3>
+      <p class="db-note">The prototype has been hardened end to end. Twelve of the thirteen planned enhancements are built, deployed, and tested; the one exception (real finance/ERP connectors) is intentionally left mocked.</p>
+      <table class="db-table">
+        <tr><th>#</th><th>Capability</th><th>What it adds</th><th>Status</th></tr>
+        <tr><td>1</td><td>Runtime inputs / parameterization</td><td>A skill learned on one input (MSFT) generalizes to others (AAPL) via templated exemplars.</td><td>Done</td></tr>
+        <tr><td>2</td><td>Execution verification</td><td>Captures success / failure / blocked per step and demotes autonomy on failure, not just on rejection.</td><td>Done</td></tr>
+        <tr><td>3</td><td>Authentication</td><td>Microsoft Entra ID (Easy Auth) fronts the app; unauthenticated requests are redirected to sign-in.</td><td>Done</td></tr>
+        <tr><td>4</td><td>Durable checkpointer</td><td>A Cosmos-backed LangGraph checkpointer so paused human-in-the-loop sessions survive restarts and scale-out.</td><td>Done</td></tr>
+        <tr><td>5</td><td>Real target-system connectors</td><td>Live finance / ERP integrations via Logic Apps or MCP.</td><td>Deferred (mocked)</td></tr>
+        <tr><td>6</td><td>RAG grounding</td><td>Azure AI Search vector index grounds each drafted step in your own SOPs and policies.</td><td>Done</td></tr>
+        <tr><td>7</td><td>Embeddings tool-binding</td><td>Steps bind to the semantically closest tool by embeddings, not fragile keyword matching.</td><td>Done</td></tr>
+        <tr><td>8</td><td>Distributed tracing</td><td>OpenTelemetry spans to Application Insights for every request and per-step draft / execute.</td><td>Done</td></tr>
+        <tr><td>9</td><td>Content Safety gate</td><td>Every action is screened before execution; unsafe actions are blocked and sent to a human.</td><td>Done</td></tr>
+        <tr><td>10</td><td>API Management token limits</td><td>Rate limit, weekly quota, and an LLM token-per-minute policy on the governance gateway.</td><td>Done</td></tr>
+        <tr><td>11</td><td>Approval policy</td><td>Risk-gated autonomy: high-consequence steps always need a human; rejected or failed steps can never auto-run; high-risk steps can require N distinct approvers (segregation of duties) with a Teams notification.</td><td>Done</td></tr>
+        <tr><td>12</td><td>Prompt distillation</td><td>Approved exemplars are compiled into one optimized per-step instruction for the portable prompt.</td><td>Done</td></tr>
+        <tr><td>13</td><td>Drift monitoring</td><td>Compares recent vs. baseline failure / rejection rates and flags a skill that is degrading.</td><td>Done</td></tr>
+      </table>
+      <p class="db-note">Plus operations: in-loop step editing (edit an action and run it, which becomes the learned exemplar); N-eyes / segregation-of-duties approvals with an out-of-band Microsoft Teams notification; a Fabric pipeline-builder skill (create lakehouse, pipeline, copy activity, dataflow, run, validate) that binds to a simulated Fabric server locally and to the real Microsoft Fabric REST API when configured; user-selectable models with an Auto tier; and a GitHub Actions CI/CD pipeline (test, build in ACR, roll out to Container Apps).</p>
+      <p class="db-note">Fabric is live end-to-end (verified): against a real workspace on an F4 capacity, the harness built a lakehouse and a Copy pipeline (public CSV to lakehouse table); the run completed and the table landed. The container's managed identity has Contributor on the workspace and the tenant setting for service-principal Fabric APIs is enabled.</p>
+    </div>
+
+    <div class="db-section">
+      <h3>Honest scope: what's real vs. what production adds</h3>
+      <div class="db-grid two">
+        <div class="db-card">
+          <h4>Real and verified today</h4>
+          <ul>
+            <li>Plans are grounded by a live Azure model (gpt-5.6-sol), with RAG grounding from Azure AI Search.</li>
+            <li>Live tools: stock quote, web browsing (Playwright), rule-based receipt categorization; steps bind to tools by embeddings.</li>
+            <li>Skills are compiled from approvals, distilled, and persisted to Cosmos DB with a durable checkpointer.</li>
+            <li>Every action is screened by Content Safety; autonomy is risk-gated and demotes on failure or drift.</li>
+            <li>Runs on Azure behind Entra ID sign-in, with managed identity, RBAC, a private data layer, and OpenTelemetry tracing.</li>
+          </ul>
+        </div>
+        <div class="db-card">
+          <h4>What a production rollout adds</h4>
+          <ul>
+            <li>Real target-system integrations (finance / ERP / Fabric) via Logic Apps or the real MCP servers; those steps here bind to simulated stand-ins.</li>
+            <li>Interactive Teams Adaptive Card approve/reject buttons and email approvals (the Teams webhook notification is built; interactive callbacks need a bot).</li>
+            <li>Skill versioning with diff and rollback, and a fleet dashboard of skills and hours saved.</li>
+            <li>ACR Premium with private endpoints to fully lock down the image supply chain.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- JSON modal -->
+  <div id="jsonModal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span id="jsonTitle">skill.json</span>
+        <button class="icon-btn" id="closeJson">✕</button>
+      </div>
+      <pre id="jsonBody" class="json"></pre>
+    </div>
+  </div>
+
+  <!-- Skill runner (watch a deployed skill execute) -->
+  <div id="runModal" class="modal" hidden>
+    <div class="modal-card run-card">
+      <div class="modal-head">
+        <span id="runTitle">Run a skill</span>
+        <button class="icon-btn" id="closeRun">✕</button>
+      </div>
+      <div class="run-sub">
+        <span class="mat-badge" id="runMaturity" data-level="">—</span>
+        <span class="run-summary" id="runSummary"></span>
+      </div>
+      <div id="runInputFields" class="run-fields" hidden></div>
+      <div class="run-controls">
+        <input id="runModalInputs" class="inputs-field" type="text"
+          title="Optional JSON inputs for this run, e.g. a specific ticker"
+          placeholder='Inputs (JSON), e.g. {"symbol":"MSFT"}' />
+        <button class="btn primary" id="runPlayBtn" title="Execute the deployed skill and watch each step">▶ Run it</button>
+      </div>
+      <p id="runInputsHint" class="muted small run-hint" hidden></p>
+      <div id="runMeta" class="run-meta" hidden></div>
+      <div id="runTimeline" class="run-timeline">
+        <p class="muted small">Click “Run it” to watch the skill execute step by step.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="/app.js?v=20260902-run2"></script>
+</body>
+</html>

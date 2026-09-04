@@ -1,0 +1,67 @@
+{
+  "task_name": "Check and Report MSFT Stock Price",
+  "slug": "check-and-report-msft-stock-price",
+  "summary": "Use a browser to retrieve the latest available Microsoft (MSFT) stock quote from a reliable financial source and report the price with relevant timing information.",
+  "required_inputs": [
+    "Stock ticker: MSFT",
+    "Access to a financial market data website"
+  ],
+  "strategies": {
+    "1": {
+      "step_id": 1,
+      "step_name": "Open Market Data Source",
+      "step_description": "Open a browser and navigate to a reliable financial market data website.",
+      "exemplars": [
+        {
+          "action": "I will open a browser and navigate to Nasdaq’s Microsoft stock page at https://www.nasdaq.com/market-activity/stocks/msft.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:46:17.618334+00:00"
+        }
+      ]
+    },
+    "2": {
+      "step_id": 2,
+      "step_name": "Look Up MSFT",
+      "step_description": "Search for the MSFT ticker and open the Microsoft stock quote page.",
+      "exemplars": [
+        {
+          "action": "Search for “MSFT stock,” then open the Microsoft Corporation (NASDAQ: MSFT) stock quote page from the search results.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:46:17.620346+00:00"
+        }
+      ]
+    },
+    "3": {
+      "step_id": 3,
+      "step_name": "Verify Quote Details",
+      "step_description": "Record the displayed stock price, currency, timestamp, and whether the market is open or closed.",
+      "exemplars": [
+        {
+          "action": "I will record the displayed MSFT stock price, its currency, the quote timestamp, and whether the market is shown as open or closed.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:46:17.620346+00:00"
+        }
+      ]
+    },
+    "4": {
+      "step_id": 4,
+      "step_name": "Report Price",
+      "step_description": "Report the MSFT price clearly, including the quote timestamp and source.",
+      "exemplars": [
+        {
+          "action": "I will report MSFT’s latest quoted stock price, clearly stating the currency, exact quote timestamp and time zone, and the market-data source.",
+          "feedback": "",
+          "timestamp": "2026-08-30T16:46:17.620346+00:00"
+        }
+      ]
+    }
+  },
+  "thresholds": {
+    "primed": 1,
+    "deterministic": 3,
+    "autonomous": 5
+  },
+  "version": 1,
+  "created_at": "2026-08-30T16:46:17.618334+00:00",
+  "updated_at": "2026-08-30T16:46:17.620346+00:00"
+}

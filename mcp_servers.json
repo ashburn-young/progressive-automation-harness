@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "harness-demo": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["mcp_demo_server.py"]
+    },
+    "fabric-builder": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["mcp_fabric_server.py"]
+    }
+  }
+}

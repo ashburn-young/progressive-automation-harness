@@ -1,0 +1,89 @@
+{
+  "task_name": "Weekly Expense Report Submission",
+  "slug": "weekly-expense-report-submission",
+  "summary": "Compile the week's receipts, assign each expense to the correct category, complete the expense report, and submit it to finance.",
+  "required_inputs": [
+    "Receipts for the reporting week",
+    "Expense categories or coding guidelines",
+    "Expense report form or system",
+    "Finance submission requirements and deadline"
+  ],
+  "strategies": {
+    "1": {
+      "step_id": 1,
+      "step_name": "Gather receipts",
+      "step_description": "Collect all physical and digital receipts for the reporting week and identify any missing documentation.",
+      "exemplars": [
+        {
+          "action": "I will collect all physical and digital receipts for the reporting week, organize them by date and expense, and list any transactions with missing receipts or supporting documentation.",
+          "feedback": "",
+          "timestamp": "2026-08-30T17:02:37.543028+00:00"
+        },
+        {
+          "action": "I will collect all physical and digital receipts for the reporting week, organize them by date and expense, and note any transactions missing receipts or supporting documentation.",
+          "feedback": "",
+          "timestamp": "2026-08-30T17:02:37.543028+00:00"
+        }
+      ]
+    },
+    "2": {
+      "step_id": 2,
+      "step_name": "Categorize expenses",
+      "step_description": "Record each receipt's details and assign the appropriate expense category according to company policy.",
+      "exemplars": [
+        {
+          "action": "I will record each receipt’s date, vendor, amount, and business purpose, then assign the appropriate company-approved expense category and flag any unclear items for review.",
+          "feedback": "",
+          "timestamp": "2026-08-30T17:02:37.543028+00:00"
+        },
+        {
+          "action": "I will record each receipt’s date, vendor, amount, and business purpose, assign the appropriate company-approved expense category or accounting code, and flag any unclear items for review.",
+          "feedback": "",
+          "timestamp": "2026-08-30T17:02:37.543028+00:00"
+        }
+      ]
+    },
+    "3": {
+      "step_id": 3,
+      "step_name": "Prepare and verify report",
+      "step_description": "Complete the weekly expense report, attach receipts, total the expenses, and check for accuracy and policy compliance.",
+      "exemplars": [
+        {
+          "action": "Complete the weekly expense report by entering each expense, attaching the corresponding receipt, calculating and reconciling the total, and verifying all entries for accuracy, required documentation, and compliance with the expense policy.",
+          "feedback": "",
+          "timestamp": "2026-08-30T17:02:37.543028+00:00"
+        },
+        {
+          "action": "Complete the weekly expense report by entering each categorized expense, attaching the corresponding receipt, reconciling the total, and verifying dates, amounts, required fields, supporting documentation, and expense policy compliance.",
+          "feedback": "",
+          "timestamp": "2026-08-30T17:02:37.543028+00:00"
+        }
+      ]
+    },
+    "4": {
+      "step_id": 4,
+      "step_name": "Submit to finance",
+      "step_description": "Send the completed expense report and supporting receipts to finance through the approved submission channel.",
+      "exemplars": [
+        {
+          "action": "I will submit the completed, verified expense report with all required supporting receipts to finance through the approved submission channel and retain the submission confirmation.",
+          "feedback": "",
+          "timestamp": "2026-08-30T17:02:37.543028+00:00"
+        },
+        {
+          "action": "I will submit the completed, verified expense report with all required receipts to finance through the approved channel by the weekly deadline and retain the submission confirmation.",
+          "feedback": "",
+          "timestamp": "2026-08-30T17:02:37.543028+00:00"
+        }
+      ]
+    }
+  },
+  "thresholds": {
+    "primed": 1,
+    "deterministic": 3,
+    "autonomous": 5
+  },
+  "version": 1,
+  "created_at": "2026-08-30T17:02:37.542684+00:00",
+  "updated_at": "2026-08-30T17:02:37.545059+00:00"
+}
