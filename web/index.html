@@ -10,7 +10,7 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="/styles.css?v=20260906-fit" />
+  <link rel="stylesheet" href="/styles.css?v=20260906-eval" />
   <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
     mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose', flowchart: { curve: 'basis' } });
@@ -236,6 +236,18 @@
     <div class="lib-head">
       <h2>Skills library</h2>
       <p class="muted">Every skill the harness has compiled from approved runs. Open one to inspect, run, or export it. A skill is reusable memory: the more it is approved, the more it runs itself.</p>
+    </div>
+    <div class="lib-controls">
+      <input id="libSearch" class="lib-search" type="text" placeholder="Search skills…" />
+      <select id="libStatus" class="select">
+        <option value="">All states</option>
+        <option value="active">Active</option>
+        <option value="candidate">Candidate</option>
+        <option value="in_training">In training</option>
+        <option value="needs_attention">Needs attention</option>
+        <option value="deprecated">Deprecated</option>
+        <option value="retired">Retired</option>
+      </select>
     </div>
     <div id="libGrid" class="lib-grid">
       <p class="muted small">Loading skills…</p>
@@ -637,6 +649,6 @@ flowchart LR
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="/app.js?v=20260906-fit"></script>
+  <script src="/app.js?v=20260906-eval"></script>
 </body>
 </html>

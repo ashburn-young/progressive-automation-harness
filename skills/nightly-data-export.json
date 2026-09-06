@@ -1,0 +1,248 @@
+{
+  "task_name": "Nightly Data Export",
+  "slug": "nightly-data-export",
+  "summary": "Export the day's transactions to the data lake and verify the row count.",
+  "required_inputs": [],
+  "strategies": {
+    "1": {
+      "step_id": 1,
+      "step_name": "Query transactions",
+      "step_description": "Select the day's transactions.",
+      "exemplars": [
+        {
+          "action": "Query transactions: Select the day's transactions.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.650603+00:00"
+        },
+        {
+          "action": "Query transactions: Select the day's transactions.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.650603+00:00"
+        },
+        {
+          "action": "Query transactions: Select the day's transactions.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        },
+        {
+          "action": "Query transactions: Select the day's transactions.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        },
+        {
+          "action": "Query transactions: Select the day's transactions.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        }
+      ],
+      "rejections": 0,
+      "failures": 0,
+      "distilled": null
+    },
+    "2": {
+      "step_id": 2,
+      "step_name": "Export to lake",
+      "step_description": "Write the file to the data lake.",
+      "exemplars": [
+        {
+          "action": "Export to lake: Write the file to the data lake.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        },
+        {
+          "action": "Export to lake: Write the file to the data lake.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        },
+        {
+          "action": "Export to lake: Write the file to the data lake.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        },
+        {
+          "action": "Export to lake: Write the file to the data lake.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        },
+        {
+          "action": "Export to lake: Write the file to the data lake.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        }
+      ],
+      "rejections": 0,
+      "failures": 0,
+      "distilled": null
+    },
+    "3": {
+      "step_id": 3,
+      "step_name": "Verify count",
+      "step_description": "Confirm the exported row count matches.",
+      "exemplars": [
+        {
+          "action": "Verify count: Confirm the exported row count matches.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        },
+        {
+          "action": "Verify count: Confirm the exported row count matches.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        },
+        {
+          "action": "Verify count: Confirm the exported row count matches.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        },
+        {
+          "action": "Verify count: Confirm the exported row count matches.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        },
+        {
+          "action": "Verify count: Confirm the exported row count matches.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.651606+00:00"
+        }
+      ],
+      "rejections": 0,
+      "failures": 0,
+      "distilled": null
+    }
+  },
+  "thresholds": {
+    "primed": 1,
+    "deterministic": 3,
+    "autonomous": 5
+  },
+  "version": 2,
+  "created_at": "2026-09-06T22:26:25.650603+00:00",
+  "updated_at": "2026-09-06T22:26:25.652113+00:00",
+  "published": true,
+  "published_at": "2026-09-06T22:26:25.651606+00:00",
+  "status": "published",
+  "owner": "",
+  "last_validated_at": "2026-09-06T22:26:25.651606+00:00",
+  "versions": [
+    {
+      "version": 1,
+      "at": "2026-09-06T22:26:25.651606+00:00",
+      "overall": "autonomous",
+      "note": "published v1",
+      "summary": "Export the day's transactions to the data lake and verify the row count.",
+      "required_inputs": [],
+      "thresholds": {
+        "primed": 1,
+        "deterministic": 3,
+        "autonomous": 5
+      },
+      "strategies": {
+        "1": {
+          "step_id": 1,
+          "step_name": "Query transactions",
+          "step_description": "Select the day's transactions.",
+          "exemplars": [
+            {
+              "action": "Query transactions: Select the day's transactions.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.650603+00:00"
+            },
+            {
+              "action": "Query transactions: Select the day's transactions.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.650603+00:00"
+            },
+            {
+              "action": "Query transactions: Select the day's transactions.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            },
+            {
+              "action": "Query transactions: Select the day's transactions.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            },
+            {
+              "action": "Query transactions: Select the day's transactions.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            }
+          ],
+          "rejections": 0,
+          "failures": 0,
+          "distilled": null
+        },
+        "2": {
+          "step_id": 2,
+          "step_name": "Export to lake",
+          "step_description": "Write the file to the data lake.",
+          "exemplars": [
+            {
+              "action": "Export to lake: Write the file to the data lake.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            },
+            {
+              "action": "Export to lake: Write the file to the data lake.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            },
+            {
+              "action": "Export to lake: Write the file to the data lake.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            },
+            {
+              "action": "Export to lake: Write the file to the data lake.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            },
+            {
+              "action": "Export to lake: Write the file to the data lake.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            }
+          ],
+          "rejections": 0,
+          "failures": 0,
+          "distilled": null
+        },
+        "3": {
+          "step_id": 3,
+          "step_name": "Verify count",
+          "step_description": "Confirm the exported row count matches.",
+          "exemplars": [
+            {
+              "action": "Verify count: Confirm the exported row count matches.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            },
+            {
+              "action": "Verify count: Confirm the exported row count matches.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            },
+            {
+              "action": "Verify count: Confirm the exported row count matches.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            },
+            {
+              "action": "Verify count: Confirm the exported row count matches.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            },
+            {
+              "action": "Verify count: Confirm the exported row count matches.",
+              "feedback": "",
+              "timestamp": "2026-09-06T22:26:25.651606+00:00"
+            }
+          ],
+          "rejections": 0,
+          "failures": 0,
+          "distilled": null
+        }
+      }
+    }
+  ]
+}

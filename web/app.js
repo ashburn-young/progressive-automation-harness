@@ -611,22 +611,48 @@ async function loadLibrary() {
   const grid = $("libGrid");
   try {
     const res = await api("/api/skills");
-    const skills = res.skills || [];
-    if (!skills.length) {
+    state.libCards = res.skills || [];
+    filterLibrary();
+  } catch (e) {
+    grid.innerHTML = `<p class="muted small">Could not load the library: ${escapeHtml(e.message)}</p>`;
+  }
+  loadShellTool();
+}
+
+function filterLibrary() {
+  const q = (($("libSearch") && $("libSearch").value) || "").trim().toLowerCase();
+  const st = ($("libStatus") && $("libStatus").value) || "";
+  const all = state.libCards || [];
+  const filtered = all.filter(
+    (s) =>
+      (!q || `${s.task_name} ${s.summary || ""}`.toLowerCase().includes(q)) &&
+      (!st || (s.display || "draft") === st)
+  );
+  renderLibraryCards(filtered, all.length);
+}
+
+function renderLibraryCards(skills, totalCount) {
+  const grid = $("libGrid");
+  if (!skills.length) {
+    if (!totalCount) {
       grid.innerHTML = `
         <div class="lib-empty">
-          <p class="muted small">No skills yet. Run a workflow in the Studio to compile one — or seed a few sample skills to explore the lifecycle.</p>
-          <button class="btn primary tiny" id="seedSkillsBtn" title="Create demo skills spanning lifecycle states">✨ Seed demo skills</button>
+          <p class="muted small">No skills yet. Run a workflow in the Studio to compile one \u2014 or seed a few sample skills to explore the lifecycle.</p>
+          <button class="btn primary tiny" id="seedSkillsBtn" title="Create demo skills spanning lifecycle states">\u2728 Seed demo skills</button>
         </div>`;
       const sb = $("seedSkillsBtn");
       if (sb) sb.addEventListener("click", seedDemoSkills);
     } else {
-      grid.innerHTML = skills
-        .map((s) => {
-          const inputs = (s.required_inputs || []).length
-            ? `<div class="lib-inputs">inputs: ${s.required_inputs.map(escapeHtml).join(", ")}</div>`
-            : "";
-          return `<div class="lib-card" data-name="${escapeHtml(s.task_name)}">
+      grid.innerHTML = `<p class="muted small">No skills match your search.</p>`;
+    }
+    return;
+  }
+  grid.innerHTML = skills
+    .map((s) => {
+      const inputs = (s.required_inputs || []).length
+        ? `<div class="lib-inputs">inputs: ${s.required_inputs.map(escapeHtml).join(", ")}</div>`
+        : "";
+      return `<div class="lib-card" data-name="${escapeHtml(s.task_name)}">
             <div class="lib-card-top">
               <span class="mat-badge" data-level="${s.overall}">${s.overall}</span>
               <span class="status-badge" data-state="${s.display || "draft"}">${statusLabel(s.display)}</span>
@@ -641,22 +667,17 @@ async function loadLibrary() {
               <button class="btn ghost tiny" data-life="${escapeHtml(s.task_name)}" title="Manage this skill's lifecycle">\u26ed Lifecycle</button>
             </div>
           </div>`;
-        })
-        .join("");
-      grid.querySelectorAll("[data-open]").forEach((b) =>
-        b.addEventListener("click", () => openSkill(b.dataset.open))
-      );
-      grid.querySelectorAll("[data-run]").forEach((b) =>
-        b.addEventListener("click", () => openRunner(b.dataset.run))
-      );
-      grid.querySelectorAll("[data-life]").forEach((b) =>
-        b.addEventListener("click", () => openLifecycle(b.dataset.life))
-      );
-    }
-  } catch (e) {
-    grid.innerHTML = `<p class="muted small">Could not load the library: ${escapeHtml(e.message)}</p>`;
-  }
-  loadShellTool();
+    })
+    .join("");
+  grid.querySelectorAll("[data-open]").forEach((b) =>
+    b.addEventListener("click", () => openSkill(b.dataset.open))
+  );
+  grid.querySelectorAll("[data-run]").forEach((b) =>
+    b.addEventListener("click", () => openRunner(b.dataset.run))
+  );
+  grid.querySelectorAll("[data-life]").forEach((b) =>
+    b.addEventListener("click", () => openLifecycle(b.dataset.life))
+  );
 }
 
 // Open a library skill in the Studio: reflect it in the Skill panel so it can
@@ -774,6 +795,14 @@ function renderLifecycle(d) {
     ? `<p class="muted small">To publish: ${d.gate_reasons.map(escapeHtml).join("; ")}.</p>`
     : "";
 
+  const ev = d.evaluation;
+  const evalHtml = ev
+    ? `<h4 class="life-h">Quality evaluation <span class="eval-grade grade-${ev.grade}">${ev.overall}/100 \u00b7 ${ev.grade}</span></h4>
+      <div class="eval-grid">
+        ${ev.dimensions.map((dm) => `<div class="eval-row"><span class="eval-label">${escapeHtml(dm.label)}</span><div class="eval-bar"><i style="width:${dm.score}%" data-lvl="${dm.score >= 70 ? "hi" : dm.score >= 45 ? "mid" : "lo"}"></i></div><span class="eval-score">${dm.score}</span><span class="eval-detail">${escapeHtml(dm.detail)}</span></div>`).join("")}
+      </div>`
+    : "";
+
   $("lifeBody").innerHTML = `
     <div class="life-head">
       <span class="status-badge big" data-state="${cur}">${statusLabel(cur)}</span>
@@ -784,11 +813,13 @@ function renderLifecycle(d) {
     ${gates}
     ${gateReasons}
     ${drifting ? `<p class="drift-warn">\u26a0 Drift detected \u2014 recent failure / rejection rate is up. The skill stays under supervision until it recovers.</p>` : ""}
+    ${evalHtml}
     <h4 class="life-h">Actions</h4>
     <div class="life-actions">${btns.join("")}</div>
     <h4 class="life-h">Version history</h4>
     <div class="ver-list">${versions}</div>
-    <p class="muted small">Rollback restores that version's learned content; later runs recompile from the approval log.</p>`;
+    <p class="muted small">Rollback restores that version's learned content; later runs recompile from the approval log.</p>
+    <div id="lifeRelated"></div>`;
 
   $("lifeBody").querySelectorAll("[data-act]").forEach((b) =>
     b.addEventListener("click", () => lifecycleAction(d.task_name, b.dataset.act))
@@ -796,6 +827,30 @@ function renderLifecycle(d) {
   $("lifeBody").querySelectorAll("[data-roll]").forEach((b) =>
     b.addEventListener("click", () => rollbackVersion(d.task_name, parseInt(b.dataset.roll, 10)))
   );
+  loadRelated(d.task_name);
+}
+
+// Related skills by embedding similarity (Discover).
+async function loadRelated(name) {
+  const box = document.getElementById("lifeRelated");
+  if (!box) return;
+  try {
+    const r = await api(`/api/skill-similar?name=${encodeURIComponent(name)}`);
+    if (!r.related || !r.related.length) {
+      box.innerHTML = "";
+      return;
+    }
+    box.innerHTML =
+      `<h4 class="life-h">Related skills</h4>` +
+      r.related
+        .map((x) => `<div class="rel-row"><button class="btn ghost tiny" data-openrel="${escapeHtml(x.task_name)}">${escapeHtml(x.task_name)}</button><span class="muted small">${Math.round(x.similarity * 100)}% similar \u00b7 ${escapeHtml(x.overall)}</span></div>`)
+        .join("");
+    box.querySelectorAll("[data-openrel]").forEach((b) =>
+      b.addEventListener("click", () => openLifecycle(b.dataset.openrel))
+    );
+  } catch (e) {
+    box.innerHTML = "";
+  }
 }
 
 async function lifecycleAction(name, action) {
@@ -1194,3 +1249,5 @@ $("shellRunBtn").addEventListener("click", runShellCommand);
 $("shellCmd").addEventListener("keydown", (e) => {
   if (e.key === "Enter") runShellCommand();
 });
+if ($("libSearch")) $("libSearch").addEventListener("input", filterLibrary);
+if ($("libStatus")) $("libStatus").addEventListener("change", filterLibrary);

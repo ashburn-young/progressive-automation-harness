@@ -1,0 +1,52 @@
+{
+  "task_name": "Onboard a New Vendor",
+  "slug": "onboard-a-new-vendor",
+  "summary": "Validate a new vendor's details and create the vendor record.",
+  "required_inputs": [],
+  "strategies": {
+    "1": {
+      "step_id": 1,
+      "step_name": "Validate details",
+      "step_description": "Check the vendor's tax id and banking details.",
+      "exemplars": [
+        {
+          "action": "Validate details: Check the vendor's tax id and banking details.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.649595+00:00"
+        }
+      ],
+      "rejections": 0,
+      "failures": 0,
+      "distilled": null
+    },
+    "2": {
+      "step_id": 2,
+      "step_name": "Create record",
+      "step_description": "Create the vendor in the system.",
+      "exemplars": [
+        {
+          "action": "Create record: Create the vendor in the system.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.649595+00:00"
+        }
+      ],
+      "rejections": 0,
+      "failures": 0,
+      "distilled": null
+    }
+  },
+  "thresholds": {
+    "primed": 1,
+    "deterministic": 3,
+    "autonomous": 5
+  },
+  "version": 1,
+  "created_at": "2026-09-06T22:26:25.649595+00:00",
+  "updated_at": "2026-09-06T22:26:25.649595+00:00",
+  "published": false,
+  "published_at": null,
+  "status": "draft",
+  "owner": "",
+  "last_validated_at": null,
+  "versions": []
+}

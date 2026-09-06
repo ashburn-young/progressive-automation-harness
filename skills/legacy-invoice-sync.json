@@ -1,0 +1,97 @@
+{
+  "task_name": "Legacy Invoice Sync",
+  "slug": "legacy-invoice-sync",
+  "summary": "Sync invoices from the legacy billing system (superseded by the new pipeline).",
+  "required_inputs": [],
+  "strategies": {
+    "1": {
+      "step_id": 1,
+      "step_name": "Read legacy invoices",
+      "step_description": "Pull invoices from the legacy database.",
+      "exemplars": [
+        {
+          "action": "Read legacy invoices: Pull invoices from the legacy database.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.654714+00:00"
+        },
+        {
+          "action": "Read legacy invoices: Pull invoices from the legacy database.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.654714+00:00"
+        },
+        {
+          "action": "Read legacy invoices: Pull invoices from the legacy database.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.654714+00:00"
+        }
+      ],
+      "rejections": 0,
+      "failures": 0,
+      "distilled": null
+    },
+    "2": {
+      "step_id": 2,
+      "step_name": "Map fields",
+      "step_description": "Map legacy fields to the new schema.",
+      "exemplars": [
+        {
+          "action": "Map fields: Map legacy fields to the new schema.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.654714+00:00"
+        },
+        {
+          "action": "Map fields: Map legacy fields to the new schema.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.654714+00:00"
+        },
+        {
+          "action": "Map fields: Map legacy fields to the new schema.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.654714+00:00"
+        }
+      ],
+      "rejections": 0,
+      "failures": 0,
+      "distilled": null
+    },
+    "3": {
+      "step_id": 3,
+      "step_name": "Write to target",
+      "step_description": "Insert into the target system.",
+      "exemplars": [
+        {
+          "action": "Write to target: Insert into the target system.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.654714+00:00"
+        },
+        {
+          "action": "Write to target: Insert into the target system.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.654714+00:00"
+        },
+        {
+          "action": "Write to target: Insert into the target system.",
+          "feedback": "",
+          "timestamp": "2026-09-06T22:26:25.654714+00:00"
+        }
+      ],
+      "rejections": 0,
+      "failures": 0,
+      "distilled": null
+    }
+  },
+  "thresholds": {
+    "primed": 1,
+    "deterministic": 3,
+    "autonomous": 5
+  },
+  "version": 1,
+  "created_at": "2026-09-06T22:26:25.654714+00:00",
+  "updated_at": "2026-09-06T22:26:25.654714+00:00",
+  "published": false,
+  "published_at": null,
+  "status": "deprecated",
+  "owner": "",
+  "last_validated_at": null,
+  "versions": []
+}

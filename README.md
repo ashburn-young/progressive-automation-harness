@@ -691,5 +691,19 @@ badge; its **⛭ Lifecycle** panel shows the stage timeline, the publish-gate
 checklist, drift, the version history (with **Rollback**), and actions:
 **Promote / Certify / Deprecate / Retire / Reactivate**.
 
+**Quality evaluation (Validate).** Beyond the binary gate, each skill gets a
+five-dimension scorecard ([evaluation.py](evaluation.py), SkillNet-inspired):
+**Safety, Completeness, Executability, Maintainability, Cost-awareness** — each
+0-100, derived from recorded signals (approvals, failures, rejections, maturity,
+distilled instructions, execution traces), plus an overall grade (A-D). Promotion
+is gated on the overall score clearing a floor (`EVAL_PROMOTE_FLOOR`, default 55),
+so publishing means *measurably* good, not just mature.
+
+**Discovery.** The Library has **search + status filter**, and each Lifecycle
+panel lists **related skills** by embedding similarity of their summaries
+(`similar_to`).
+
 Endpoints: `GET /api/skill-lifecycle?name=`, `POST /api/skill-lifecycle?name=`
-(`{action}`), `POST /api/skill-rollback?name=` (`{version}`).
+(`{action}`), `POST /api/skill-rollback?name=` (`{version}`),
+`GET /api/skill-evaluate?name=`, `GET /api/skill-similar?name=`,
+`POST /api/skills/seed` (demo skills spanning lifecycle states).

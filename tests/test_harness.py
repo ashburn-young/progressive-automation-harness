@@ -217,6 +217,28 @@ def test_compile_preserves_lifecycle(tmp_path, monkeypatch):
     assert len(out.versions) >= 1
 
 
+def test_evaluate_skill():
+    import evaluation
+    from skill import Skill
+
+    s = Skill(task_name="Eval Demo", summary="does a thing", required_inputs=["x"])
+    strat = s.ensure_strategy(1, "step one")
+    for _ in range(5):  # climb to autonomous
+        strat.add_approval("do it")
+    ev = evaluation.evaluate_skill(s, [])
+    keys = {d["key"] for d in ev["dimensions"]}
+    assert keys == {"safety", "completeness", "executability", "maintainability", "cost"}
+    assert 0 <= ev["overall"] <= 100
+    by = {d["key"]: d["score"] for d in ev["dimensions"]}
+    assert by["completeness"] == 100  # the single step has an exemplar
+    assert by["cost"] == 100  # mastered step replays with no LLM call
+    # A recorded failure drags executability below 100.
+    strat.failures = 2
+    ev2 = evaluation.evaluate_skill(s, [])
+    ex = {d["key"]: d["score"] for d in ev2["dimensions"]}["executability"]
+    assert ex < 100
+
+
 def test_detect_symbol():
     assert tools._detect_symbol("check microsoft stock") == "MSFT"
     assert tools._detect_symbol("AAPL quote") == "AAPL"

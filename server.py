@@ -628,6 +628,7 @@ def _derived_status(skill: Skill, drifting: bool) -> str:
 def _lifecycle_view(skill: Skill, traces: list[dict[str, Any]]) -> dict[str, Any]:
     """Full lifecycle state: stored + derived status, publish gate, drift, versions."""
     import monitoring
+    import evaluation
 
     drift = monitoring.drift_report(traces) if traces else {"drifting": False}
     drifting = bool(drift.get("drifting"))
@@ -655,6 +656,7 @@ def _lifecycle_view(skill: Skill, traces: list[dict[str, Any]]) -> dict[str, Any
         "overall": skill.overall_maturity().value,
         "regressions": skill.has_regressions(),
         "drift": drift,
+        "evaluation": evaluation.evaluate_skill(skill, traces),
         "versions": [
             {
                 "version": v.get("version"),
@@ -801,6 +803,46 @@ def skill_lifecycle(name: str) -> dict[str, Any]:
     return {"exists": True, **_lifecycle_view(skill, STORE.read_traces(name))}
 
 
+@app.get("/api/skill-evaluate")
+def skill_evaluate(name: str) -> dict[str, Any]:
+    """Five-dimension quality scorecard for a skill (SkillNet-style)."""
+    import evaluation
+
+    skill = STORE.load_skill(name)
+    if skill is None:
+        return {"exists": False, "task_name": name}
+    return {"exists": True, "task_name": name, **evaluation.evaluate_skill(skill, STORE.read_traces(name))}
+
+
+@app.get("/api/skill-similar")
+def skill_similar(name: str, k: int = 3) -> dict[str, Any]:
+    """Related skills by embedding similarity of their summaries (Discover)."""
+    import embeddings
+
+    target = STORE.load_skill(name)
+    if target is None or not embeddings.is_available():
+        return {"related": []}
+    others = [s for s in STORE.list_skills() if s.strategies and s.task_name != name]
+    if not others:
+        return {"related": []}
+    texts = [f"{target.task_name}. {target.summary}"] + [f"{s.task_name}. {s.summary}" for s in others]
+    vecs = embeddings.embed(texts)
+    if not vecs:
+        return {"related": []}
+    tvec = vecs[0]
+    scored = sorted(
+        ((embeddings.cosine(tvec, v), s) for s, v in zip(others, vecs[1:])),
+        key=lambda x: x[0],
+        reverse=True,
+    )
+    related = [
+        {"task_name": s.task_name, "similarity": round(sim, 3), "overall": s.overall_maturity().value}
+        for sim, s in scored[:k]
+        if sim > 0.4
+    ]
+    return {"related": related}
+
+
 @app.post("/api/skill-lifecycle")
 def skill_lifecycle_action(
     name: str, req: LifecycleActionRequest, request: Request
@@ -817,6 +859,17 @@ def skill_lifecycle_action(
             raise HTTPException(
                 status_code=400,
                 detail="Not ready to promote — " + "; ".join(reasons) + ".",
+            )
+        import evaluation
+
+        ev = evaluation.evaluate_skill(skill, STORE.read_traces(name))
+        floor = int(os.getenv("EVAL_PROMOTE_FLOOR", "55"))
+        if ev["overall"] < floor:
+            weak = min(ev["dimensions"], key=lambda d: d["score"])
+            raise HTTPException(
+                status_code=400,
+                detail=f"Not ready to promote — quality score {ev['overall']}/100 is below {floor} "
+                f"(weakest: {weak['label']} {weak['score']}).",
             )
         skill.snapshot(note=f"promoted v{skill.version}")
         skill.version += 1
