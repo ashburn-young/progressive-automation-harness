@@ -670,12 +670,22 @@ def _lifecycle_view(skill: Skill, traces: list[dict[str, Any]]) -> dict[str, Any
 @app.get("/api/skills")
 def list_skills() -> dict[str, Any]:
     """The skills library: every compiled skill, newest first."""
+    import monitoring
+
     skills = [s for s in STORE.list_skills() if s.strategies]
-    cards = sorted(
-        (_skill_summary(s) for s in skills),
-        key=lambda c: c["updated_at"],
-        reverse=True,
-    )
+    cards: list[dict[str, Any]] = []
+    for s in skills:
+        card = _skill_summary(s)
+        # Only published skills can be "needs attention" (drift), so limit reads.
+        if s.published or s.status == "published":
+            try:
+                traces = STORE.read_traces(s.task_name)
+                drifting = bool(monitoring.drift_report(traces).get("drifting")) if traces else False
+                card["display"] = _derived_status(s, drifting)
+            except Exception:
+                pass
+        cards.append(card)
+    cards.sort(key=lambda c: c["updated_at"], reverse=True)
     return {"skills": cards, "store": STORE.kind, "count": len(cards)}
 
 
@@ -848,6 +858,98 @@ def skill_rollback(name: str, req: RollbackRequest) -> dict[str, Any]:
     skill.updated_at = datetime.now(timezone.utc).isoformat()
     STORE.save_skill(skill)
     return {"ok": True, "restored_from": req.version, **_lifecycle_view(skill, STORE.read_traces(name))}
+
+
+def _seed_skill(
+    task_name: str,
+    summary: str,
+    steps: list[tuple[str, str]],
+    approvals: int,
+    *,
+    status: str = "draft",
+    published: bool = False,
+    snapshots: int = 0,
+    inputs: Optional[list[str]] = None,
+) -> Skill:
+    """Build a demo skill matured to a given level with a lifecycle state."""
+    skill = Skill(task_name=task_name, summary=summary, required_inputs=list(inputs or []))
+    for i, (name, desc) in enumerate(steps, start=1):
+        strat = skill.ensure_strategy(i, name, desc)
+        for _ in range(approvals):  # identical approvals climb the maturity ladder
+            strat.add_approval(f"{name}: {desc}")
+    now = datetime.now(timezone.utc).isoformat()
+    skill.status = status
+    if published:
+        skill.published = True
+        skill.published_at = now
+        skill.last_validated_at = now
+    for _ in range(snapshots):
+        skill.snapshot(note=f"published v{skill.version}")
+        skill.version += 1
+    return skill
+
+
+def _drift_traces(task_name: str) -> list[dict[str, Any]]:
+    """Traces whose recent failure rate trips drift detection (needs-attention)."""
+    out: list[dict[str, Any]] = []
+    for i in range(10):
+        out.append({"task_name": task_name, "timestamp": f"2026-08-01T00:00:{i:02d}",
+                    "outcome": "approved", "execution_status": "success"})
+    for i in range(6):
+        out.append({"task_name": task_name, "timestamp": f"2026-09-05T00:00:{i:02d}",
+                    "outcome": "approved", "execution_status": "failed"})
+    return out
+
+
+@app.post("/api/skills/seed")
+def seed_skills() -> dict[str, Any]:
+    """Create demo skills spanning lifecycle states so the Library and Lifecycle
+    panel can be explored without running full sessions. Idempotent (upserts)."""
+    defs = [
+        {"drift": False, "build": dict(
+            task_name="Summarize Competitor Pricing",
+            summary="Open a competitor's pricing page, extract the plan tiers and prices, and summarize the differences versus our product.",
+            inputs=["competitor"],
+            steps=[("Open pricing page", "Navigate to the competitor's public pricing page."),
+                   ("Extract tiers", "Read each plan tier and its monthly price."),
+                   ("Summarize differences", "Write a short comparison versus our product.")],
+            approvals=5, status="published", published=True, snapshots=2)},
+        {"drift": False, "build": dict(
+            task_name="Weekly Expense Report",
+            summary="Collect receipts, categorize them, total the amounts, and prepare the weekly expense report.",
+            steps=[("Collect receipts", "Gather the week's receipts."),
+                   ("Categorize", "Classify each receipt by expense type."),
+                   ("Total and prepare", "Sum the totals and format the report.")],
+            approvals=3, status="draft")},
+        {"drift": False, "build": dict(
+            task_name="Onboard a New Vendor",
+            summary="Validate a new vendor's details and create the vendor record.",
+            steps=[("Validate details", "Check the vendor's tax id and banking details."),
+                   ("Create record", "Create the vendor in the system.")],
+            approvals=1, status="draft")},
+        {"drift": True, "build": dict(
+            task_name="Nightly Data Export",
+            summary="Export the day's transactions to the data lake and verify the row count.",
+            steps=[("Query transactions", "Select the day's transactions."),
+                   ("Export to lake", "Write the file to the data lake."),
+                   ("Verify count", "Confirm the exported row count matches.")],
+            approvals=5, status="published", published=True, snapshots=1)},
+        {"drift": False, "build": dict(
+            task_name="Legacy Invoice Sync",
+            summary="Sync invoices from the legacy billing system (superseded by the new pipeline).",
+            steps=[("Read legacy invoices", "Pull invoices from the legacy database."),
+                   ("Map fields", "Map legacy fields to the new schema."),
+                   ("Write to target", "Insert into the target system.")],
+            approvals=3, status="deprecated")},
+    ]
+    created: list[dict[str, Any]] = []
+    for d in defs:
+        skill = _seed_skill(**d["build"])
+        STORE.save_skill(skill)
+        if d.get("drift"):
+            STORE.append_traces(_drift_traces(skill.task_name))
+        created.append({"task_name": skill.task_name, "status": skill.status, "published": skill.published})
+    return {"seeded": created, "count": len(created), "store": STORE.kind}
 
 
 def _schema_from_skill(skill: Skill) -> WorkflowSchema:
