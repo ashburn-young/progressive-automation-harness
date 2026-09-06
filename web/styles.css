@@ -597,8 +597,8 @@ textarea:focus, .select:focus, .num:focus, .feedback:focus {
 .lib-summary { color: var(--muted); font-size: 12.5px; margin: 0 0 10px; flex: 1; }
 .lib-inputs { color: var(--muted); font-size: 11.5px; margin-bottom: 8px; }
 .lib-meta { color: var(--muted); font-size: 11.5px; margin-bottom: 12px; }
-.lib-actions { display: flex; gap: 8px; }
-.lib-actions .btn.tiny { width: auto; margin-top: 0; }
+.lib-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.lib-actions .btn.tiny { width: auto; margin-top: 0; padding: 6px 9px; font-size: 11px; }
 .pill.pub { background: rgba(52,211,153,0.16); color: #6ee7b7; }
 .pill.on { background: rgba(52,211,153,0.16); color: #6ee7b7; }
 .pill.off { background: rgba(100,116,139,0.2); color: #cbd5e1; }
