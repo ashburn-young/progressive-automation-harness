@@ -949,7 +949,9 @@ def seed_skills() -> dict[str, Any]:
         if d.get("drift"):
             STORE.append_traces(_drift_traces(skill.task_name))
         created.append({"task_name": skill.task_name, "status": skill.status, "published": skill.published})
-    return {"seeded": created, "count": len(created), "store": STORE.kind}
+    # Read back so we can confirm the store lists what it just wrote.
+    readback = len([s for s in STORE.list_skills() if s.strategies])
+    return {"seeded": created, "count": len(created), "readback": readback, "store": STORE.kind}
 
 
 def _schema_from_skill(skill: Skill) -> WorkflowSchema:

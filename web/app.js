@@ -613,7 +613,13 @@ async function loadLibrary() {
     const res = await api("/api/skills");
     const skills = res.skills || [];
     if (!skills.length) {
-      grid.innerHTML = `<p class="muted small">No skills yet. Run or simulate a workflow in the Studio, then come back.</p>`;
+      grid.innerHTML = `
+        <div class="lib-empty">
+          <p class="muted small">No skills yet. Run a workflow in the Studio to compile one — or seed a few sample skills to explore the lifecycle.</p>
+          <button class="btn primary tiny" id="seedSkillsBtn" title="Create demo skills spanning lifecycle states">✨ Seed demo skills</button>
+        </div>`;
+      const sb = $("seedSkillsBtn");
+      if (sb) sb.addEventListener("click", seedDemoSkills);
     } else {
       grid.innerHTML = skills
         .map((s) => {
@@ -661,6 +667,21 @@ function openSkill(name) {
   loadSkillReport(name);
   setView("studio");
   toast(`Opened "${name}". Use JSON, Prompt, Export, or Run deployed skill.`, 4000);
+}
+
+// Create a spread of demo skills (different lifecycle states) with one click.
+async function seedDemoSkills() {
+  const btn = $("seedSkillsBtn");
+  busy(btn, true, "Seeding\u2026");
+  try {
+    const res = await api("/api/skills/seed", { method: "POST", body: "{}" });
+    toast(`Seeded ${res.count} demo skill(s).`);
+    loadLibrary();
+  } catch (e) {
+    toast("Seeding failed: " + e.message, 5000);
+  } finally {
+    busy(btn, false);
+  }
 }
 
 // ---------- skill lifecycle ----------

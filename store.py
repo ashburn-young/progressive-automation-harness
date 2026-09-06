@@ -114,8 +114,16 @@ class CosmosStore:
 
     def list_skills(self) -> list[Skill]:
         out: list[Skill] = []
+        # The skills container is partitioned by /slug, so listing every skill is
+        # a cross-partition query and must opt in explicitly.
         try:
-            for item in self._skills.query_items(query="SELECT * FROM c"):
+            items = self._skills.query_items(
+                query="SELECT * FROM c", enable_cross_partition_query=True
+            )
+        except TypeError:
+            items = self._skills.query_items(query="SELECT * FROM c")
+        try:
+            for item in items:
                 try:
                     out.append(Skill.model_validate(item["skill"]))
                 except Exception:
