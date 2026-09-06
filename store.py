@@ -153,10 +153,21 @@ def get_store():
 
 
 def compile_and_save(store, task_name: str, summary: str, required_inputs: list[str]) -> Skill:
-    """Recompile a skill from the store's traces and persist it."""
+    """Recompile a skill from the store's traces and persist it, preserving the
+    lifecycle metadata (status, versions, publish state) of any existing skill."""
     records = store.read_traces(task_name)
     skill = compile_from_records(
         task_name, records, summary=summary, required_inputs=required_inputs
     )
+    prev = store.load_skill(task_name)
+    if prev is not None:
+        skill.version = prev.version
+        skill.status = prev.status
+        skill.owner = prev.owner
+        skill.published = prev.published
+        skill.published_at = prev.published_at
+        skill.last_validated_at = prev.last_validated_at
+        skill.versions = prev.versions
+        skill.created_at = prev.created_at
     store.save_skill(skill)
     return skill

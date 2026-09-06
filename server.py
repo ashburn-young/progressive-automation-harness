@@ -116,6 +116,14 @@ class ShellScriptRequest(BaseModel):
     args: list[str] = []
 
 
+class LifecycleActionRequest(BaseModel):
+    action: str  # promote | certify | deprecate | retire | reactivate
+
+
+class RollbackRequest(BaseModel):
+    version: int
+
+
 # Conversation state for interactive workflow extraction.
 _INTERVIEWS: dict[str, dict[str, Any]] = {}
 
@@ -597,8 +605,65 @@ def _skill_summary(skill: Skill) -> dict[str, Any]:
         "steps": len(skill.strategies),
         "approvals": sum(int(r.get("approvals", 0)) for r in rows),
         "published": bool(skill.published),
+        "status": skill.status,
+        "display": _derived_status(skill, False),
+        "certified": skill.is_promotable(),
+        "version": skill.version,
         "updated_at": skill.updated_at,
         "required_inputs": skill.required_inputs,
+    }
+
+
+def _derived_status(skill: Skill, drifting: bool) -> str:
+    """The lifecycle state to display, overlaying drift on the stored status."""
+    if skill.status in ("deprecated", "retired"):
+        return skill.status
+    if skill.status == "published" or skill.published:
+        return "needs_attention" if drifting else "active"
+    if skill.is_promotable():
+        return "candidate"
+    return "in_training" if skill.strategies else "draft"
+
+
+def _lifecycle_view(skill: Skill, traces: list[dict[str, Any]]) -> dict[str, Any]:
+    """Full lifecycle state: stored + derived status, publish gate, drift, versions."""
+    import monitoring
+
+    drift = monitoring.drift_report(traces) if traces else {"drifting": False}
+    drifting = bool(drift.get("drifting"))
+    order = ["cold", "primed", "deterministic", "autonomous"]
+    reasons: list[str] = []
+    if not skill.strategies:
+        reasons.append("no learned steps yet")
+    elif order.index(skill.overall_maturity().value) < order.index("deterministic"):
+        reasons.append("reach DETERMINISTIC (approve the same action 3+ times)")
+    if skill.has_regressions():
+        reasons.append("clear rejected / failed steps")
+    return {
+        "task_name": skill.task_name,
+        "status": skill.status,
+        "display": _derived_status(skill, drifting),
+        "certified": skill.is_promotable(),
+        "gate_reasons": reasons,
+        "version": skill.version,
+        "owner": skill.owner,
+        "published": bool(skill.published),
+        "published_at": skill.published_at,
+        "last_validated_at": skill.last_validated_at,
+        "created_at": skill.created_at,
+        "updated_at": skill.updated_at,
+        "overall": skill.overall_maturity().value,
+        "regressions": skill.has_regressions(),
+        "drift": drift,
+        "versions": [
+            {
+                "version": v.get("version"),
+                "at": v.get("at"),
+                "overall": v.get("overall"),
+                "note": v.get("note", ""),
+            }
+            for v in skill.versions
+        ],
     }
 
 
@@ -677,18 +742,26 @@ def skill_drift(task: str) -> dict[str, Any]:
 
 
 @app.post("/api/skill-deploy")
-def skill_deploy(name: str) -> dict[str, Any]:
-    """Publish the skill: mark it published durably in the store (Cosmos when
-    deployed) and also drop a copy in the local ``deployed/`` registry stub."""
+def skill_deploy(name: str, request: Request) -> dict[str, Any]:
+    """Publish the skill: snapshot a version, mark it published in the store
+    (Cosmos when deployed), set its lifecycle status, and drop a copy in the
+    local ``deployed/`` registry stub."""
     skill = STORE.load_skill(name)
     if skill is None:
         raise HTTPException(
             status_code=404,
             detail="No skill to deploy yet. Run or simulate this workflow first.",
         )
-    # Durable publish: the skill already lives in the store; flag it published.
+    now = datetime.now(timezone.utc).isoformat()
+    skill.snapshot(note=f"published v{skill.version}")
+    skill.version += 1
     skill.published = True
-    skill.published_at = datetime.now(timezone.utc).isoformat()
+    skill.published_at = now
+    skill.last_validated_at = now
+    skill.status = "published"
+    owner = request.headers.get("x-ms-client-principal-name")
+    if owner:
+        skill.owner = owner
     STORE.save_skill(skill)
 
     DEPLOYED_DIR.mkdir(parents=True, exist_ok=True)
@@ -703,7 +776,78 @@ def skill_deploy(name: str) -> dict[str, Any]:
         "task_name": skill.task_name,
         "overall": skill.overall_maturity().value,
         "steps": len(skill.strategies),
+        "version": skill.version,
+        "certified": skill.is_promotable(),
+        "status": skill.status,
     }
+
+
+@app.get("/api/skill-lifecycle")
+def skill_lifecycle(name: str) -> dict[str, Any]:
+    """Full lifecycle state for a skill (status, publish gate, drift, versions)."""
+    skill = STORE.load_skill(name)
+    if skill is None:
+        return {"exists": False, "task_name": name}
+    return {"exists": True, **_lifecycle_view(skill, STORE.read_traces(name))}
+
+
+@app.post("/api/skill-lifecycle")
+def skill_lifecycle_action(
+    name: str, req: LifecycleActionRequest, request: Request
+) -> dict[str, Any]:
+    """Drive a lifecycle transition: promote / certify / deprecate / retire / reactivate."""
+    skill = STORE.load_skill(name)
+    if skill is None:
+        raise HTTPException(status_code=404, detail="No such skill.")
+    action = (req.action or "").lower()
+    now = datetime.now(timezone.utc).isoformat()
+    if action in ("promote", "publish"):
+        if not skill.is_promotable():
+            reasons = _lifecycle_view(skill, STORE.read_traces(name))["gate_reasons"]
+            raise HTTPException(
+                status_code=400,
+                detail="Not ready to promote — " + "; ".join(reasons) + ".",
+            )
+        skill.snapshot(note=f"promoted v{skill.version}")
+        skill.version += 1
+        skill.published = True
+        skill.published_at = now
+        skill.last_validated_at = now
+        skill.status = "published"
+        owner = request.headers.get("x-ms-client-principal-name")
+        if owner:
+            skill.owner = owner
+    elif action == "certify":
+        skill.last_validated_at = now
+    elif action == "deprecate":
+        skill.status = "deprecated"
+    elif action == "retire":
+        skill.status = "retired"
+        skill.published = False
+    elif action == "reactivate":
+        skill.status = "published" if skill.is_promotable() else "draft"
+        skill.published = skill.status == "published"
+        if skill.published:
+            skill.published_at = now
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown action '{req.action}'.")
+    STORE.save_skill(skill)
+    return {"ok": True, "action": action, **_lifecycle_view(skill, STORE.read_traces(name))}
+
+
+@app.post("/api/skill-rollback")
+def skill_rollback(name: str, req: RollbackRequest) -> dict[str, Any]:
+    """Restore a skill's content from a prior version snapshot."""
+    skill = STORE.load_skill(name)
+    if skill is None:
+        raise HTTPException(status_code=404, detail="No such skill.")
+    if not skill.restore(req.version):
+        raise HTTPException(status_code=404, detail=f"No version {req.version} to roll back to.")
+    skill.snapshot(note=f"rolled back to v{req.version}")
+    skill.version += 1
+    skill.updated_at = datetime.now(timezone.utc).isoformat()
+    STORE.save_skill(skill)
+    return {"ok": True, "restored_from": req.version, **_lifecycle_view(skill, STORE.read_traces(name))}
 
 
 def _schema_from_skill(skill: Skill) -> WorkflowSchema:

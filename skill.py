@@ -169,6 +169,11 @@ class Skill(BaseModel):
     # Set by Deploy: a durable "published to the registry" marker.
     published: bool = False
     published_at: Optional[str] = None
+    # Lifecycle governance layer (overlays the maturity ladder).
+    status: str = "draft"  # draft | published | deprecated | retired
+    owner: str = ""
+    last_validated_at: Optional[str] = None
+    versions: list[dict] = Field(default_factory=list)
 
     def model_post_init(self, _context: object) -> None:  # pydantic v2 hook
         if not self.slug:
@@ -280,6 +285,48 @@ class Skill(BaseModel):
                 }
             )
         return rows
+
+    # -- lifecycle ---------------------------------------------------------
+    def has_regressions(self) -> bool:
+        """True if any step carries a rejection or execution failure."""
+        return any(s.rejections or s.failures for s in self.strategies.values())
+
+    def is_promotable(self) -> bool:
+        """Publish gate: mature enough (>= DETERMINISTIC) and clean."""
+        if not self.strategies:
+            return False
+        order = [Maturity.COLD, Maturity.PRIMED, Maturity.DETERMINISTIC, Maturity.AUTONOMOUS]
+        mature = order.index(self.overall_maturity()) >= order.index(Maturity.DETERMINISTIC)
+        return mature and not self.has_regressions()
+
+    def snapshot(self, note: str = "") -> dict:
+        """Append an immutable snapshot of the current skill for rollback/diff."""
+        snap = {
+            "version": self.version,
+            "at": _now(),
+            "overall": self.overall_maturity().value,
+            "note": note,
+            "summary": self.summary,
+            "required_inputs": list(self.required_inputs),
+            "thresholds": dict(self.thresholds),
+            "strategies": {k: v.model_dump() for k, v in self.strategies.items()},
+        }
+        self.versions.append(snap)
+        return snap
+
+    def restore(self, version: int) -> bool:
+        """Restore strategy content from a prior version snapshot."""
+        snap = next((s for s in self.versions if s.get("version") == version), None)
+        if snap is None:
+            return False
+        self.summary = snap.get("summary", self.summary)
+        self.required_inputs = list(snap.get("required_inputs", self.required_inputs))
+        self.thresholds = dict(snap.get("thresholds", self.thresholds))
+        self.strategies = {
+            k: StepStrategy.model_validate(v)
+            for k, v in snap.get("strategies", {}).items()
+        }
+        return True
 
     def to_json(self) -> str:
         return self.model_dump_json(indent=2)

@@ -168,6 +168,55 @@ def test_bind_tool_disabled(monkeypatch):
     assert tool_binding.bind_tool({"name": "x"}, "a", None, []) is None
 
 
+def test_lifecycle_gate():
+    from skill import Skill
+
+    s = Skill(task_name="Gate Demo")
+    strat = s.ensure_strategy(1, "do it")
+    assert s.is_promotable() is False  # no approvals yet
+    for _ in range(3):
+        strat.add_approval("the same action")
+    assert s.overall_maturity().value == "deterministic"
+    assert s.is_promotable() is True
+    strat.rejections = 1
+    assert s.has_regressions() is True
+    assert s.is_promotable() is False  # a regression blocks promotion
+
+
+def test_snapshot_and_restore():
+    from skill import Skill
+
+    s = Skill(task_name="Ver Demo", summary="v1 summary")
+    s.ensure_strategy(1, "step").add_approval("action one")
+    s.snapshot(note="published v1")
+    pinned = s.version
+    s.summary = "v2 summary"
+    s.ensure_strategy(1, "step").add_approval("action two changed")
+    assert s.restore(pinned) is True
+    assert s.summary == "v1 summary"
+
+
+def test_compile_preserves_lifecycle(tmp_path, monkeypatch):
+    import store as store_mod
+    from skill import Skill
+
+    monkeypatch.setattr(store_mod, "SKILLS_DIR", tmp_path)
+    monkeypatch.setattr(store_mod, "TRAINING_LOG", tmp_path / "log.jsonl")
+    fs = store_mod.FileStore()
+    s = Skill(task_name="Persist Demo", summary="sum")
+    s.ensure_strategy(1, "step").add_approval("act")
+    s.status = "published"
+    s.published = True
+    s.version = 4
+    s.snapshot(note="v")
+    fs.save_skill(s)
+    out = store_mod.compile_and_save(fs, "Persist Demo", "sum", [])
+    assert out.status == "published"
+    assert out.published is True
+    assert out.version == 4
+    assert len(out.versions) >= 1
+
+
 def test_detect_symbol():
     assert tools._detect_symbol("check microsoft stock") == "MSFT"
     assert tools._detect_symbol("AAPL quote") == "AAPL"

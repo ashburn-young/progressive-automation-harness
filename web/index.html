@@ -10,7 +10,7 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="/styles.css?v=20260902-run2" />
+  <link rel="stylesheet" href="/styles.css?v=20260906-lifecycle" />
   <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
     mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose', flowchart: { curve: 'basis' } });
@@ -440,6 +440,24 @@ flowchart TB
     </div>
 
     <div class="db-section">
+      <h3>The skill lifecycle</h3>
+      <p class="db-note">A skill is a governed asset. Its maturity (how much it does on its own) climbs as you approve, while its lifecycle status (how it is managed) moves through explicit, gated stages. Drift or failures pull a live skill back under supervision; versions are snapshotted on every publish so you can roll back.</p>
+      <pre class="mermaid">
+flowchart LR
+  A["Draft<br/>authored / interviewed"] --> B["In training<br/>approvals accrue, maturity climbs"]
+  B --> C["Candidate<br/>mature + no regressions"]
+  C -->|"promote (gate)"| D["Active<br/>published, runnable"]
+  D --> E["Monitored<br/>telemetry + drift"]
+  E -->|"drift / failures"| F["Needs attention<br/>demoted to supervision"]
+  F --> B
+  D -->|"superseded"| G["Deprecated"]
+  G --> H["Retired / archived"]
+  G -.->|"reactivate"| D
+      </pre>
+      <p class="db-note">The publish gate requires the skill to reach DETERMINISTIC with no rejected or failed steps; execution drift flips a live skill to Needs attention automatically. Manage all of this per skill from the <b>Library → Lifecycle</b> panel: promote, certify, deprecate, retire, reactivate, and roll back to any prior version.</p>
+    </div>
+
+    <div class="db-section">
       <h3>Skills-based vs. agentic architecture</h3>
       <p class="db-note">This <b>is</b> an agentic system — it runs a reason → act → observe loop — but its <b>product</b> is a skill, not an agent. It treats the agent as a factory that distills itself into durable, deterministic skills. The question is where the intelligence ends up living: invoked fresh from the model every run, or extracted into a reusable, governed asset.</p>
       <table class="db-table">
@@ -590,8 +608,19 @@ flowchart TB
     </div>
   </div>
 
+  <!-- Lifecycle modal -->
+  <div id="lifecycleModal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span id="lifeTitle">Lifecycle</span>
+        <button class="icon-btn" id="closeLife">✕</button>
+      </div>
+      <div id="lifeBody" class="life-body"></div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" hidden></div>
 
-  <script src="/app.js?v=20260902-run2"></script>
+  <script src="/app.js?v=20260906-lifecycle"></script>
 </body>
 </html>

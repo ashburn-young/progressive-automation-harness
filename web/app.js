@@ -617,22 +617,22 @@ async function loadLibrary() {
     } else {
       grid.innerHTML = skills
         .map((s) => {
-          const pub = s.published ? `<span class="pill pub">published</span>` : "";
           const inputs = (s.required_inputs || []).length
             ? `<div class="lib-inputs">inputs: ${s.required_inputs.map(escapeHtml).join(", ")}</div>`
             : "";
           return `<div class="lib-card" data-name="${escapeHtml(s.task_name)}">
             <div class="lib-card-top">
               <span class="mat-badge" data-level="${s.overall}">${s.overall}</span>
-              ${pub}
+              <span class="status-badge" data-state="${s.display || "draft"}">${statusLabel(s.display)}</span>
             </div>
             <h3>${escapeHtml(s.task_name)}</h3>
             <p class="lib-summary">${escapeHtml(s.summary || "No summary.")}</p>
             ${inputs}
-            <div class="lib-meta">${s.steps} step(s) · ${s.approvals} approval(s)</div>
+            <div class="lib-meta">v${s.version || 1} \u00b7 ${s.steps} step(s) \u00b7 ${s.approvals} approval(s)</div>
             <div class="lib-actions">
-              <button class="btn primary tiny" data-open="${escapeHtml(s.task_name)}" title="Open this skill in the Studio">Open in Studio →</button>
+              <button class="btn primary tiny" data-open="${escapeHtml(s.task_name)}" title="Open this skill in the Studio">Open in Studio \u2192</button>
               <button class="btn ghost tiny" data-run="${escapeHtml(s.task_name)}" title="Watch this skill execute step by step">\u25b6 Watch it run</button>
+              <button class="btn ghost tiny" data-life="${escapeHtml(s.task_name)}" title="Manage this skill's lifecycle">\u26ed Lifecycle</button>
             </div>
           </div>`;
         })
@@ -642,6 +642,9 @@ async function loadLibrary() {
       );
       grid.querySelectorAll("[data-run]").forEach((b) =>
         b.addEventListener("click", () => openRunner(b.dataset.run))
+      );
+      grid.querySelectorAll("[data-life]").forEach((b) =>
+        b.addEventListener("click", () => openLifecycle(b.dataset.life))
       );
     }
   } catch (e) {
@@ -658,6 +661,146 @@ function openSkill(name) {
   loadSkillReport(name);
   setView("studio");
   toast(`Opened "${name}". Use JSON, Prompt, Export, or Run deployed skill.`, 4000);
+}
+
+// ---------- skill lifecycle ----------
+const STATUS_LABELS = {
+  draft: "draft",
+  in_training: "in training",
+  candidate: "candidate",
+  active: "active",
+  needs_attention: "needs attention",
+  deprecated: "deprecated",
+  retired: "retired",
+};
+function statusLabel(state) {
+  return STATUS_LABELS[state] || state || "draft";
+}
+
+async function openLifecycle(name) {
+  if (!name) return;
+  $("lifeTitle").textContent = `Lifecycle \u00b7 ${name}`;
+  $("lifeBody").innerHTML = `<p class="muted small">Loading\u2026</p>`;
+  $("lifecycleModal").hidden = false;
+  try {
+    const d = await api(`/api/skill-lifecycle?name=${encodeURIComponent(name)}`);
+    if (!d.exists) {
+      $("lifeBody").innerHTML = `<p class="muted small">No skill yet for \u201c${escapeHtml(name)}\u201d.</p>`;
+      return;
+    }
+    renderLifecycle(d);
+  } catch (e) {
+    $("lifeBody").innerHTML = `<p class="muted small">Could not load lifecycle: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+function gateItem(ok, label) {
+  return `<div class="gate-item ${ok ? "ok" : "no"}"><span>${ok ? "\u2713" : "\u2717"}</span> ${escapeHtml(label)}</div>`;
+}
+
+function renderLifecycle(d) {
+  const drifting = !!(d.drift && d.drift.drifting);
+  const order = ["cold", "primed", "deterministic", "autonomous"];
+  const mature = order.indexOf(d.overall) >= order.indexOf("deterministic");
+  const path = ["draft", "in_training", "candidate", "active"];
+  const cur = d.display;
+  const stagesHtml = path
+    .map((st) => {
+      const reached =
+        path.indexOf(cur) >= path.indexOf(st) ||
+        (["needs_attention", "deprecated", "retired"].includes(cur) && st === "active");
+      return `<div class="life-stage ${reached ? "on" : ""} ${cur === st ? "cur" : ""}">${statusLabel(st)}</div>`;
+    })
+    .join('<span class="life-arrow">\u2192</span>');
+
+  const gates = `<div class="gate-list">
+      ${gateItem(mature, "Mature enough (\u2265 deterministic)")}
+      ${gateItem(!d.regressions, "No rejected or failed steps")}
+      ${gateItem(!drifting, "No execution drift")}
+    </div>`;
+
+  const promoteDisabled = d.certified ? "" : "disabled";
+  const promoteTitle = d.certified ? "Publish this skill" : "Meet the publish gate first";
+  const btns = [];
+  if (!["active", "deprecated", "retired"].includes(cur)) {
+    btns.push(`<button class="btn primary tiny" data-act="promote" ${promoteDisabled} title="${promoteTitle}">\u25b2 Promote / Publish</button>`);
+  }
+  btns.push(`<button class="btn ghost tiny" data-act="certify" title="Record a validation timestamp">\u2714 Certify</button>`);
+  if (["active", "needs_attention"].includes(cur)) {
+    btns.push(`<button class="btn ghost tiny" data-act="deprecate" title="Mark superseded but still runnable">\u2913 Deprecate</button>`);
+  }
+  if (cur !== "retired") {
+    btns.push(`<button class="btn ghost tiny" data-act="retire" title="Sunset: no longer runnable">\u29b8 Retire</button>`);
+  }
+  if (["deprecated", "retired"].includes(cur)) {
+    btns.push(`<button class="btn ghost tiny" data-act="reactivate" title="Bring it back">\u21ba Reactivate</button>`);
+  }
+
+  const versions =
+    (d.versions || [])
+      .slice()
+      .reverse()
+      .map(
+        (v) => `<div class="ver-row">
+        <span class="ver-tag">v${v.version}</span>
+        <span class="ver-meta">${escapeHtml((v.note || "").toString())}${v.overall ? " \u00b7 " + escapeHtml(v.overall) : ""}</span>
+        <button class="btn ghost tiny" data-roll="${v.version}">\u21a9 Rollback</button>
+      </div>`
+      )
+      .join("") || `<p class="muted small">No versions yet \u2014 publish to snapshot one.</p>`;
+
+  const gateReasons = (d.gate_reasons || []).length
+    ? `<p class="muted small">To publish: ${d.gate_reasons.map(escapeHtml).join("; ")}.</p>`
+    : "";
+
+  $("lifeBody").innerHTML = `
+    <div class="life-head">
+      <span class="status-badge big" data-state="${cur}">${statusLabel(cur)}</span>
+      <span class="muted small">v${d.version} \u00b7 maturity ${escapeHtml(d.overall)}${d.owner ? " \u00b7 owner " + escapeHtml(d.owner) : ""}</span>
+    </div>
+    <div class="life-stages">${stagesHtml}</div>
+    <h4 class="life-h">Publish gate</h4>
+    ${gates}
+    ${gateReasons}
+    ${drifting ? `<p class="drift-warn">\u26a0 Drift detected \u2014 recent failure / rejection rate is up. The skill stays under supervision until it recovers.</p>` : ""}
+    <h4 class="life-h">Actions</h4>
+    <div class="life-actions">${btns.join("")}</div>
+    <h4 class="life-h">Version history</h4>
+    <div class="ver-list">${versions}</div>
+    <p class="muted small">Rollback restores that version's learned content; later runs recompile from the approval log.</p>`;
+
+  $("lifeBody").querySelectorAll("[data-act]").forEach((b) =>
+    b.addEventListener("click", () => lifecycleAction(d.task_name, b.dataset.act))
+  );
+  $("lifeBody").querySelectorAll("[data-roll]").forEach((b) =>
+    b.addEventListener("click", () => rollbackVersion(d.task_name, parseInt(b.dataset.roll, 10)))
+  );
+}
+
+async function lifecycleAction(name, action) {
+  try {
+    const d = await api(`/api/skill-lifecycle?name=${encodeURIComponent(name)}`, {
+      method: "POST",
+      body: JSON.stringify({ action }),
+    });
+    renderLifecycle(d);
+    toast(`${statusLabel(d.display)} \u2014 ${action} done.`);
+  } catch (e) {
+    toast(e.message, 5000);
+  }
+}
+
+async function rollbackVersion(name, version) {
+  try {
+    const d = await api(`/api/skill-rollback?name=${encodeURIComponent(name)}`, {
+      method: "POST",
+      body: JSON.stringify({ version }),
+    });
+    renderLifecycle(d);
+    toast(`Rolled back to v${version}.`);
+  } catch (e) {
+    toast(e.message, 5000);
+  }
 }
 
 // ---------- skill runner (watch a deployed skill execute) ----------
@@ -987,6 +1130,10 @@ $("jsonModal").addEventListener("click", (e) => {
 $("closeRun").addEventListener("click", () => ($("runModal").hidden = true));
 $("runModal").addEventListener("click", (e) => {
   if (e.target.id === "runModal") $("runModal").hidden = true;
+});
+$("closeLife").addEventListener("click", () => ($("lifecycleModal").hidden = true));
+$("lifecycleModal").addEventListener("click", (e) => {
+  if (e.target.id === "lifecycleModal") $("lifecycleModal").hidden = true;
 });
 $("runPlayBtn").addEventListener("click", playRun);
 $("runModalInputs").addEventListener("keydown", (e) => {

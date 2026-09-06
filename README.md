@@ -34,6 +34,7 @@ web navigation. It runs fully offline for demos, live against **Azure AI Foundry
 13. [Skill portability: memory, tools, and actions](#13-skill-portability-memory-tools-and-actions)
 14. [Skills-based vs. agentic architecture](#14-skills-based-vs-agentic-architecture)
 15. [Cost model](#15-cost-model)
+16. [The skill lifecycle](#16-the-skill-lifecycle)
 
 ---
 
@@ -643,3 +644,52 @@ down) **plus token usage that is highest during learning and trends toward
 near-zero as skills graduate** — the opposite of a naive agent that pays full
 token cost on every execution forever. Multi-model deployments themselves add
 **~$0 idle** (GlobalStandard is pay-per-token).
+
+---
+
+## 16. The skill lifecycle
+
+A skill is a **governed asset**, so it has a managed lifecycle layered on top of
+the maturity ladder. Two dimensions run in parallel:
+
+- **Maturity** (learning) — `COLD → PRIMED → DETERMINISTIC → AUTONOMOUS` (see
+  [§2](#2-the-maturity-ladder-how-a-skill-is-learned)): how much the skill does on
+  its own.
+- **Lifecycle status** (governance) — how the skill is *managed*:
+  `draft → in training → candidate → active → (needs attention) → deprecated →
+  retired`.
+
+```mermaid
+flowchart LR
+  A[Draft] --> B[In training]
+  B --> C[Candidate]
+  C -->|promote · gate| D[Active]
+  D --> E[Monitored]
+  E -->|drift / failures| F[Needs attention]
+  F --> B
+  D -->|superseded| G[Deprecated]
+  G --> H[Retired]
+  G -.->|reactivate| D
+```
+
+**Publish gate.** Promotion to *active* requires the skill to reach
+`DETERMINISTIC` **and** carry no rejected or failed steps (`Skill.is_promotable()`
+in [skill.py](skill.py)). The gate is surfaced as a checklist in the UI.
+
+**Versioning + rollback.** Every publish snapshots the skill
+(`Skill.snapshot()`); the version history is kept on the artifact and you can
+**roll back** to any prior version (`Skill.restore()`). Lifecycle metadata
+(status, owner, versions, publish state) is preserved across recompilation
+(`store.compile_and_save`).
+
+**Drift-driven supervision.** A live skill whose recent failure / rejection rate
+climbs (`monitoring.drift_report`) is shown as **needs attention** and stays under
+human supervision until it recovers — closing the loop back to training.
+
+**Manage it in the UI.** Each card in the **Library** shows a lifecycle status
+badge; its **⛭ Lifecycle** panel shows the stage timeline, the publish-gate
+checklist, drift, the version history (with **Rollback**), and actions:
+**Promote / Certify / Deprecate / Retire / Reactivate**.
+
+Endpoints: `GET /api/skill-lifecycle?name=`, `POST /api/skill-lifecycle?name=`
+(`{action}`), `POST /api/skill-rollback?name=` (`{version}`).
